@@ -9,6 +9,7 @@ import {
   useFloating,
 } from "@floating-ui/react";
 import XTerm, { type XTermHandle } from "@/components/XTerm";
+import MobileKeyboardToolbar from "@/components/MobileKeyboardToolbar";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
 
 interface Props {
@@ -93,6 +94,7 @@ export default function BotTerminal({ ws, actions }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionMode, setSuggestionMode] = useState<SuggestionMode>("history");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [inputFocused, setInputFocused] = useState(false);
   const isOpen = suggestions.length > 0;
   const tabCompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { onMessage, connected } = ws;
@@ -225,6 +227,29 @@ export default function BotTerminal({ ws, actions }: Props) {
     inputRef.current?.focus();
   }, [input, actions, addToHistory]);
 
+  // モバイルツールバー用のキー操作ハンドラー
+  const handleToolbarArrowDown = useCallback(() => {
+    if (suggestions.length > 0) {
+      setHighlightedIndex((i) => (i + 1) % suggestions.length);
+    }
+  }, [suggestions.length]);
+
+  const handleToolbarArrowUp = useCallback(() => {
+    if (suggestions.length > 0) {
+      setHighlightedIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+    }
+  }, [suggestions.length]);
+
+  const handleToolbarTab = useCallback(() => {
+    if (suggestions.length > 0) {
+      selectSuggestion(
+        suggestions[highlightedIndex >= 0 ? highlightedIndex : 0],
+        suggestionMode,
+        input,
+      );
+    }
+  }, [suggestions, highlightedIndex, suggestionMode, input, selectSuggestion]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (isOpen) {
@@ -270,6 +295,7 @@ export default function BotTerminal({ ws, actions }: Props) {
     setTimeout(() => {
       setSuggestions([]);
       setHighlightedIndex(-1);
+      setInputFocused(false);
     }, 150);
   }, []);
 
@@ -334,6 +360,7 @@ export default function BotTerminal({ ws, actions }: Props) {
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onFocus={() => setInputFocused(true)}
           onBlur={handleBlur}
           placeholder="/say こんにちは"
           autoComplete="off"
@@ -341,6 +368,7 @@ export default function BotTerminal({ ws, actions }: Props) {
           autoCapitalize="off"
           spellCheck={false}
           data-form-type="other"
+          data-lpignore="true"
           enterKeyHint="send"
           className="flex-1 bg-transparent px-3.5 py-3 text-sm outline-none placeholder:opacity-40"
           style={{
@@ -362,6 +390,14 @@ export default function BotTerminal({ ws, actions }: Props) {
           SEND
         </button>
       </div>
+
+      {/* モバイルキーボードツールバー */}
+      <MobileKeyboardToolbar
+        visible={inputFocused}
+        onTab={handleToolbarTab}
+        onArrowUp={handleToolbarArrowUp}
+        onArrowDown={handleToolbarArrowDown}
+      />
     </div>
   );
 }
