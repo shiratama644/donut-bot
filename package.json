@@ -6,7 +6,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "dev:all": "pnpm --filter donutsmp-bot-web dev & pnpm dev",
+    "dev:all": "concurrently --names \"web,bot\" \"pnpm --filter donutsmp-bot-web dev\" \"pnpm dev\"",
     "web:dev": "pnpm --filter donutsmp-bot-web dev",
     "web:build": "pnpm --filter donutsmp-bot-web build",
     "web:start": "pnpm --filter donutsmp-bot-web start"
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/node": "^22.19.16",
     "@types/ws": "^8.18.1",
+    "concurrently": "^9.2.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
