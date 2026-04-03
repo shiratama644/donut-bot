@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BotMessage } from "@/types/bot";
 
 const RECONNECT_DELAY_MS = 3000;
@@ -128,5 +128,10 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
-  return { connected, actions: { sendChat, requestTabComplete }, onMessage };
+  const actions = useMemo(
+    () => ({ sendChat, requestTabComplete }),
+    [sendChat, requestTabComplete],
+  );
+
+  return { connected, actions, onMessage };
 }

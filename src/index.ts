@@ -106,7 +106,7 @@ function handleClientMessage(bot: Bot, ws: WebSocket, msg: Record<string, unknow
     bot.tabComplete(text)
       .then((matches) => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "tabcomplete", requestId, matches }));
+          ws.send(JSON.stringify({ type: "tabcomplete", requestId, matches: matches.map((m) => m.match) }));
         }
       })
       .catch(() => {

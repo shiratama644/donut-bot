@@ -9,6 +9,8 @@ export interface XTermHandle {
   clear: () => void;
 }
 
+type PendingWrite = { method: "writeln" | "write"; text: string };
+
 interface Props {
   options?: ITerminalOptions;
   className?: string;
@@ -18,6 +20,7 @@ const XTerm = forwardRef<XTermHandle, Props>(({ options, className }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<import("@xterm/xterm").Terminal | null>(null);
   const fitAddonRef = useRef<import("@xterm/addon-fit").FitAddon | null>(null);
+  const pendingRef = useRef<PendingWrite[]>([]);
 
   useEffect(() => {
     let terminal: import("@xterm/xterm").Terminal;
@@ -58,6 +61,10 @@ const XTerm = forwardRef<XTermHandle, Props>(({ options, className }, ref) => {
 
       termRef.current = terminal;
       fitAddonRef.current = fitAddon;
+
+      // 初期化前にバッファされた書き込みをフラッシュ
+      pendingRef.current.forEach(({ method, text }) => terminal[method](text));
+      pendingRef.current = [];
     });
 
     const handleResize = () => fitAddonRef.current?.fit();
@@ -75,8 +82,20 @@ const XTerm = forwardRef<XTermHandle, Props>(({ options, className }, ref) => {
   }, []);
 
   useImperativeHandle(ref, () => ({
-    writeln: (text: string) => termRef.current?.writeln(text),
-    write: (text: string) => termRef.current?.write(text),
+    writeln: (text: string) => {
+      if (termRef.current) {
+        termRef.current.writeln(text);
+      } else {
+        pendingRef.current.push({ method: "writeln", text });
+      }
+    },
+    write: (text: string) => {
+      if (termRef.current) {
+        termRef.current.write(text);
+      } else {
+        pendingRef.current.push({ method: "write", text });
+      }
+    },
     clear: () => termRef.current?.clear(),
   }));
 
