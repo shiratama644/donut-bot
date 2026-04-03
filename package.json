@@ -9,10 +9,12 @@
   },
   "dependencies": {
     "dotenv": "^17.4.0",
-    "mineflayer": "^4.37.0"
+    "mineflayer": "^4.37.0",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.16",
+    "@types/ws": "^8.18.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
