@@ -16,13 +16,14 @@ export default function HomePage() {
   const ws = useBotWebSocket(WS_URL);
   const [position, setPosition] = useState<Position | null>(null);
 
+  const { onMessage } = ws;
   useEffect(() => {
-    return ws.onMessage((msg) => {
+    return onMessage((msg) => {
       if (msg.type === "pos") {
         setPosition({ x: msg.x, y: msg.y, z: msg.z });
       }
     });
-  }, [ws]);
+  }, [onMessage]);
 
   return (
     <div

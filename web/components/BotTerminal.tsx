@@ -95,6 +95,7 @@ export default function BotTerminal({ ws, actions }: Props) {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const isOpen = suggestions.length > 0;
   const tabCompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { onMessage, connected } = ws;
 
   // @floating-ui/react でドロップダウンを入力バーの上（スマホではキーボードの上）に配置する
   const { refs, floatingStyles } = useFloating({
@@ -117,7 +118,7 @@ export default function BotTerminal({ ws, actions }: Props) {
 
   // メッセージを端末に書き込む
   useEffect(() => {
-    return ws.onMessage((msg) => {
+    return onMessage((msg) => {
       const term = xtermRef.current;
       if (!term) return;
 
@@ -132,18 +133,18 @@ export default function BotTerminal({ ws, actions }: Props) {
         term.writeln(`${time}\x1b[33m[ACTIONBAR]\x1b[0m ${sanitizeForTerminal(msg.text)}`);
       }
     });
-  }, [ws]);
+  }, [onMessage]);
 
   // 接続/切断メッセージ
   useEffect(() => {
     const term = xtermRef.current;
     if (!term) return;
-    if (ws.connected) {
+    if (connected) {
       term.writeln("\x1b[32m[SYS] 接続しました\x1b[0m");
     } else {
       term.writeln("\x1b[33m[SYS] 切断されました。再接続中…\x1b[0m");
     }
-  }, [ws.connected]);
+  }, [connected]);
 
   // タブ補完タイマーをクリーンアップ
   useEffect(() => {
@@ -259,7 +260,7 @@ export default function BotTerminal({ ws, actions }: Props) {
           return;
         }
       }
-      if (e.key === "Enter") handleSend();
+      if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
     },
     [isOpen, suggestions, highlightedIndex, suggestionMode, input, selectSuggestion, handleSend],
   );
@@ -349,6 +350,7 @@ export default function BotTerminal({ ws, actions }: Props) {
           }}
         />
         <button
+          type="button"
           onClick={handleSend}
           className="px-5 text-lg tracking-wide transition-colors duration-150"
           style={{
