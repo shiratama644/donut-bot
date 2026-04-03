@@ -19,6 +19,10 @@ pnpm-debug.log*
 dist/
 build/
 out/
+.next/
+
+# Lock files (project uses pnpm)
+package-lock.json
 
 # IDE / Editor folders
 .vscode/
