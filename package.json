@@ -5,7 +5,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "web:dev": "pnpm --filter donutsmp-bot-web dev",
+    "web:build": "pnpm --filter donutsmp-bot-web build",
+    "web:start": "pnpm --filter donutsmp-bot-web start"
   },
   "dependencies": {
     "dotenv": "^17.4.0",
