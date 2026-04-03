@@ -77,7 +77,7 @@ function startWebSocketServer(bot: Bot): void {
     ws.on("message", (raw) => {
       try {
         const msg = JSON.parse(raw.toString()) as Record<string, unknown>;
-        handleClientMessage(bot, msg);
+        handleClientMessage(bot, ws, msg);
       } catch {
         // 無効なJSON無視
       }
@@ -91,10 +91,30 @@ function startWebSocketServer(bot: Bot): void {
   });
 }
 
-function handleClientMessage(bot: Bot, msg: Record<string, unknown>): void {
+function handleClientMessage(bot: Bot, ws: WebSocket, msg: Record<string, unknown>): void {
   if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
     bot.chat(msg.text.trim());
     log.info(`[SEND/WEB] ${msg.text.trim()}`);
+    return;
+  }
+
+  if (
+    msg.type === "tabcomplete" &&
+    typeof msg.text === "string" &&
+    typeof msg.requestId === "number"
+  ) {
+    const { text, requestId } = msg as { text: string; requestId: number };
+    bot.tabComplete(text)
+      .then((matches) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "tabcomplete", requestId, matches }));
+        }
+      })
+      .catch(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "tabcomplete", requestId, matches: [] }));
+        }
+      });
   }
 }
 

@@ -70,14 +70,31 @@ function useCommandHistory() {
   return { history, add };
 }
 
+// タブ補完の選択時にカーソル位置にマッチを適用する
+// 入力の最後のスペース以降をマッチで置き換え、先頭の "/" を保持する
+function applyCompletion(currentInput: string, match: string): string {
+  const lastSpace = currentInput.lastIndexOf(" ");
+  if (lastSpace === -1) {
+    // スペースなし: "/gam" → match="gamemode" → "/gamemode"
+    const prefix = currentInput.startsWith("/") && !match.startsWith("/") ? "/" : "";
+    return prefix + match;
+  }
+  // スペースあり: "/msg pla" → match="player1" → "/msg player1"
+  return currentInput.slice(0, lastSpace + 1) + match;
+}
+
+type SuggestionMode = "history" | "tabcomplete";
+
 export default function BotTerminal({ ws, actions }: Props) {
   const xtermRef = useRef<XTermHandle>(null);
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { history, add: addToHistory } = useCommandHistory();
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionMode, setSuggestionMode] = useState<SuggestionMode>("history");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const isOpen = suggestions.length > 0;
+  const tabCompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // @floating-ui/react でドロップダウンを入力バーの上（スマホではキーボードの上）に配置する
   const { refs, floatingStyles } = useFloating({
@@ -128,8 +145,15 @@ export default function BotTerminal({ ws, actions }: Props) {
     }
   }, [ws.connected]);
 
-  // 入力値に基づいてサジェストを更新する
-  const updateSuggestions = useCallback(
+  // タブ補完タイマーをクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (tabCompleteTimer.current) clearTimeout(tabCompleteTimer.current);
+    };
+  }, []);
+
+  // 入力値に基づいて履歴サジェストを更新する（"/" なし入力用）
+  const updateHistorySuggestions = useCallback(
     (value: string) => {
       if (!value.trim()) {
         setSuggestions([]);
@@ -141,6 +165,7 @@ export default function BotTerminal({ ws, actions }: Props) {
         .filter((cmd) => cmd !== value && cmd.toLowerCase().startsWith(lower))
         .slice(0, 8);
       setSuggestions(matches);
+      setSuggestionMode("history");
       setHighlightedIndex(-1);
     },
     [history],
@@ -150,18 +175,43 @@ export default function BotTerminal({ ws, actions }: Props) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
       setInput(val);
-      updateSuggestions(val);
+
+      if (tabCompleteTimer.current) clearTimeout(tabCompleteTimer.current);
+
+      if (val.startsWith("/")) {
+        // "/" から始まる入力: Minecraftサーバーにタブ補完をリクエスト（250ms デバウンス）
+        setSuggestions([]);
+        setHighlightedIndex(-1);
+        tabCompleteTimer.current = setTimeout(() => {
+          actions.requestTabComplete(val).then((matches) => {
+            // レスポンスが届いた時点で入力が変わっていたら無視
+            if (inputRef.current?.value === val) {
+              setSuggestions(matches.slice(0, 10));
+              setSuggestionMode("tabcomplete");
+              setHighlightedIndex(-1);
+            }
+          });
+        }, 250);
+      } else {
+        // 通常チャット: 履歴ベースの補完
+        updateHistorySuggestions(val);
+      }
     },
-    [updateSuggestions],
+    [actions, updateHistorySuggestions],
   );
 
   // サジェストを選択して入力欄に反映する（送信はしない）
-  const selectSuggestion = useCallback((suggestion: string) => {
-    setInput(suggestion);
-    setSuggestions([]);
-    setHighlightedIndex(-1);
-    inputRef.current?.focus();
-  }, []);
+  const selectSuggestion = useCallback(
+    (suggestion: string, mode: SuggestionMode, currentInput: string) => {
+      const newInput =
+        mode === "tabcomplete" ? applyCompletion(currentInput, suggestion) : suggestion;
+      setInput(newInput);
+      setSuggestions([]);
+      setHighlightedIndex(-1);
+      inputRef.current?.focus();
+    },
+    [],
+  );
 
   const handleSend = useCallback(() => {
     const text = input.trim();
@@ -190,13 +240,17 @@ export default function BotTerminal({ ws, actions }: Props) {
         // Tab: 先頭またはハイライト中のサジェストを補完する
         if (e.key === "Tab") {
           e.preventDefault();
-          selectSuggestion(suggestions[highlightedIndex >= 0 ? highlightedIndex : 0]);
+          selectSuggestion(
+            suggestions[highlightedIndex >= 0 ? highlightedIndex : 0],
+            suggestionMode,
+            input,
+          );
           return;
         }
         // Enter: ハイライト中のサジェストがあれば補完、なければ送信
         if (e.key === "Enter" && highlightedIndex >= 0) {
           e.preventDefault();
-          selectSuggestion(suggestions[highlightedIndex]);
+          selectSuggestion(suggestions[highlightedIndex], suggestionMode, input);
           return;
         }
         if (e.key === "Escape") {
@@ -207,7 +261,7 @@ export default function BotTerminal({ ws, actions }: Props) {
       }
       if (e.key === "Enter") handleSend();
     },
-    [isOpen, suggestions, highlightedIndex, selectSuggestion, handleSend],
+    [isOpen, suggestions, highlightedIndex, suggestionMode, input, selectSuggestion, handleSend],
   );
 
   const handleBlur = useCallback(() => {
@@ -249,7 +303,7 @@ export default function BotTerminal({ ws, actions }: Props) {
             aria-selected={highlightedIndex === idx}
             onMouseDown={(e) => {
               e.preventDefault(); // blur を防いで選択を確実にする
-              selectSuggestion(item);
+              selectSuggestion(item, suggestionMode, input);
             }}
             onMouseEnter={() => setHighlightedIndex(idx)}
             style={{
@@ -309,3 +363,4 @@ export default function BotTerminal({ ws, actions }: Props) {
     </div>
   );
 }
+
