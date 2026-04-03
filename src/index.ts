@@ -2,7 +2,6 @@ import "dotenv/config";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import mineflayer, { Bot } from "mineflayer";
-import readline from "readline";
 
 // ─── 設定 ────────────────────────────────────────────────
 const CONFIG = {
@@ -21,7 +20,7 @@ function ts(): string {
 }
 
 // ─── ログ ────────────────────────────────────────────────
-type LogLevel = "info" | "warn" | "error" | "chat" | "send";
+type LogLevel = "info" | "warn" | "error" | "send";
 
 const log = {
   info:  (msg: string) => emit("info",  `[INFO]  ${ts()} ${msg}`),
@@ -130,26 +129,6 @@ function startCoordDisplay(bot: Bot): ReturnType<typeof setInterval> {
   }, 500);
 }
 
-// ─── ターミナルコマンド入力 ───────────────────────────────
-function startCommandInput(bot: Bot): void {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-  rl.on("line", (line) => {
-    const text = line.trim();
-    if (!text) return;
-    process.stdout.write("\n");
-    try {
-      bot.chat(text);
-      log.info(`[SEND] ${text}`);
-    } catch (err) {
-      log.error("チャット送信失敗", err);
-    }
-  });
-
-  rl.on("close", () => { bot.quit(); process.exit(0); });
-  log.info("コマンド入力有効: テキストを入力してEnterで送信  [Ctrl+C] 終了");
-}
-
 // ─── Bot ─────────────────────────────────────────────────
 function createBot(): Bot {
   log.info(`接続中… host=${CONFIG.host} version=${CONFIG.version} auth=${CONFIG.auth}`);
@@ -163,7 +142,6 @@ function createBot(): Bot {
     log.info("スポーン完了。");
     startWebSocketServer(bot);
     coordTimer = startCoordDisplay(bot);
-    startCommandInput(bot);
   });
 
   // 移動のたびに座標をブロードキャスト（スロットリングで過剰送信を防止）
@@ -187,8 +165,10 @@ function createBot(): Bot {
     } else {
       // NOTE: chat メッセージは { type:"chat", text, time } として独立ブロードキャストし、
       // クライアント側でチャット専用の表示を行う。emit() が送る { type:"log" } とは別扱い。
+      // emit() を呼ぶと { type:"log" } も同時にブロードキャストされて二重表示になるため、
+      // ここでは broadcast のみ行い、コンソール出力は console.log で行う。
+      console.log(`[CHAT] ${ts()} ${text}`);
       broadcast({ type: "chat", text, time: ts() });
-      emit("chat", `[CHAT] ${text}`);
     }
   });
 
