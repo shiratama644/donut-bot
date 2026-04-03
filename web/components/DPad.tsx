@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import type { ControlKey } from "@/types/bot";
 import type { BotWebSocketActions } from "@/hooks/useBotWebSocket";
 
@@ -45,16 +45,6 @@ const ACTION_BUTTONS: ButtonDef[] = [
   },
 ];
 
-const KEY_MAP: Record<string, ControlKey> = {
-  w: "forward",
-  s: "back",
-  a: "left",
-  d: "right",
-  " ": "jump",
-  Shift: "sneak",
-  r: "sprint",
-};
-
 export default function DPad({ actions, disabled }: Props) {
   const pressedRef = useRef<Set<ControlKey>>(new Set());
   const activeRef = useRef<Map<ControlKey, HTMLElement>>(new Map());
@@ -78,26 +68,6 @@ export default function DPad({ actions, disabled }: Props) {
       activeRef.current.delete(key);
     }
   }, [actions]);
-
-  // キーボードショートカット
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).tagName === "INPUT") return;
-      const k = KEY_MAP[e.key];
-      if (!k || pressedRef.current.has(k)) return;
-      press(k);
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      const k = KEY_MAP[e.key];
-      if (k) release(k);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-    };
-  }, [press, release]);
 
   const btnBase: React.CSSProperties = {
     backgroundColor: "var(--color-btn)",
