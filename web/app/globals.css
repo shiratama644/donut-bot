@@ -25,6 +25,14 @@ body {
   touch-action: manipulation;
 }
 
+/* Chrome/Safari のオートフィルアイコン（鍵・カード・ピン等）を非表示にする */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+}
+
 /* xterm.js overrides */
 .xterm {
   height: 100%;
