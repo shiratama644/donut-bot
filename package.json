@@ -1,0 +1,19 @@
+{
+  "name": "donutsmp-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.0",
+    "mineflayer": "^4.37.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.16",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
