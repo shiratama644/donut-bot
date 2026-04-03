@@ -8,16 +8,12 @@ interface Props {
 }
 
 export default function Header({ position, connected }: Props) {
-  const fmtNum = (n: number, w: number) => n.toFixed(1).padStart(w);
-
-  const coordText = position
-    ? `X: ${fmtNum(position.x, 8)}   Y: ${fmtNum(position.y, 6)}   Z: ${fmtNum(position.z, 8)}`
-    : "X: —        Y: —      Z: —";
+  const fmt = (n: number) => n.toFixed(1);
 
   return (
     <header
       style={{ backgroundColor: "var(--color-panel)", borderBottom: "1px solid var(--color-border)" }}
-      className="flex items-center justify-between gap-3 px-4 py-2.5"
+      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5"
     >
       <span
         className="shrink-0 text-xl tracking-widest"
@@ -26,12 +22,20 @@ export default function Header({ position, connected }: Props) {
         ⛏ DonutSMP
       </span>
 
-      <span
-        className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs tracking-wide"
-        style={{ color: "var(--color-green)" }}
-      >
-        {coordText}
-      </span>
+      {position ? (
+        <span
+          className="flex gap-3 text-xs tracking-wide"
+          style={{ color: "var(--color-green)" }}
+        >
+          <span>X: {fmt(position.x)}</span>
+          <span>Y: {fmt(position.y)}</span>
+          <span>Z: {fmt(position.z)}</span>
+        </span>
+      ) : (
+        <span className="text-xs tracking-wide" style={{ color: "var(--color-dim)" }}>
+          X: — &nbsp; Y: — &nbsp; Z: —
+        </span>
+      )}
 
       <span
         className="size-2 shrink-0 rounded-full transition-colors duration-300"
