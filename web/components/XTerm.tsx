@@ -51,6 +51,7 @@ const XTerm = forwardRef<XTermHandle, Props>(({ options, className }, ref) => {
         cursorBlink: true,
         convertEol: true,
         scrollback: 500,
+        disableStdin: true,
         ...options,
       });
 

@@ -363,7 +363,7 @@ export default function BotTerminal({ ws, actions }: Props) {
           onFocus={() => setInputFocused(true)}
           onBlur={handleBlur}
           placeholder="/say こんにちは"
-          autoComplete="off"
+          autoComplete="new-password"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
