@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BotMessage, ControlKey } from "@/types/bot";
+import type { BotMessage } from "@/types/bot";
 
 const RECONNECT_DELAY_MS = 3000;
 
 export interface BotWebSocketActions {
   sendChat: (text: string) => void;
-  sendKey: (key: ControlKey, state: boolean) => void;
 }
 
 export interface BotWebSocketState {
@@ -79,14 +78,10 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "chat", text });
   }, [send]);
 
-  const sendKey = useCallback((key: ControlKey, state: boolean) => {
-    send({ type: "key", key, state });
-  }, [send]);
-
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
     handlersRef.current.add(handler);
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
-  return { connected, actions: { sendChat, sendKey }, onMessage };
+  return { connected, actions: { sendChat }, onMessage };
 }

@@ -32,6 +32,3 @@ export interface Position {
   y: number;
   z: number;
 }
-
-export const CONTROL_KEYS = ["forward", "back", "left", "right", "jump", "sneak", "sprint"] as const;
-export type ControlKey = typeof CONTROL_KEYS[number];

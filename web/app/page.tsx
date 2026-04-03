@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import BotTerminal from "@/components/BotTerminal";
-import DPad from "@/components/DPad";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
 import type { Position } from "@/types/bot";
 
@@ -27,31 +26,12 @@ export default function HomePage() {
 
   return (
     <div
-      className="grid h-full"
-      style={{
-        gridTemplateRows: "auto 1fr",
-        gridTemplateColumns: "1fr 280px",
-        gridTemplateAreas: '"header header" "terminal controls"',
-        gap: 1,
-        backgroundColor: "var(--color-border)",
-      }}
+      className="flex h-full flex-col"
+      style={{ gap: 1, backgroundColor: "var(--color-border)" }}
     >
-      {/* ヘッダー */}
-      <div style={{ gridArea: "header" }}>
-        <Header position={position} connected={ws.connected} />
-      </div>
-
-      {/* ターミナル */}
-      <div
-        className="flex min-h-0 flex-col"
-        style={{ gridArea: "terminal" }}
-      >
+      <Header position={position} connected={ws.connected} />
+      <div className="flex min-h-0 flex-1 flex-col">
         <BotTerminal ws={ws} actions={ws.actions} />
-      </div>
-
-      {/* コントロール */}
-      <div style={{ gridArea: "controls" }}>
-        <DPad actions={ws.actions} disabled={!ws.connected} />
       </div>
     </div>
   );

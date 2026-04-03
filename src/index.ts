@@ -91,19 +91,10 @@ function startWebSocketServer(bot: Bot): void {
   });
 }
 
-const CONTROL_KEYS = ["forward", "back", "left", "right", "jump", "sneak", "sprint"] as const;
-type ControlKey = typeof CONTROL_KEYS[number];
-
 function handleClientMessage(bot: Bot, msg: Record<string, unknown>): void {
   if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
     bot.chat(msg.text.trim());
     log.info(`[SEND/WEB] ${msg.text.trim()}`);
-  }
-
-  if (msg.type === "key" && typeof msg.key === "string" && typeof msg.state === "boolean") {
-    if ((CONTROL_KEYS as readonly string[]).includes(msg.key)) {
-      bot.setControlState(msg.key as ControlKey, msg.state);
-    }
   }
 }
 
@@ -155,13 +146,30 @@ function createBot(): Bot {
     startCommandInput(bot);
   });
 
-  bot.on("message", (msg) => {
+  // 移動のたびに座標をブロードキャスト（スロットリングで過剰送信を防止）
+  let lastMoveBroadcast = 0;
+  bot.on("move", () => {
+    const now = Date.now();
+    if (now - lastMoveBroadcast < 150) return;
+    lastMoveBroadcast = now;
+    const pos = bot.entity?.position;
+    if (!pos || isNaN(pos.x)) return;
+    broadcast({ type: "pos", x: pos.x, y: pos.y, z: pos.z });
+  });
+
+  bot.on("message", (msg, position) => {
     const text = msg.toString();
     process.stdout.write("\n");
-    // NOTE: chat メッセージは { type:"chat", text, time } として独立ブロードキャストし、
-    // クライアント側でチャット専用の表示を行う。emit() が送る { type:"log" } とは別扱い。
-    broadcast({ type: "chat", text, time: ts() });
-    emit("chat", `[CHAT] ${text}`);
+    if (position === "game_info") {
+      // アクションバーメッセージ（ホットバー上部のテキスト）
+      broadcast({ type: "actionbar", text, time: ts() });
+      emit("info", `[ACTIONBAR] ${text}`);
+    } else {
+      // NOTE: chat メッセージは { type:"chat", text, time } として独立ブロードキャストし、
+      // クライアント側でチャット専用の表示を行う。emit() が送る { type:"log" } とは別扱い。
+      broadcast({ type: "chat", text, time: ts() });
+      emit("chat", `[CHAT] ${text}`);
+    }
   });
 
   bot.on("kicked",   (reason, loggedIn) => log.error(`キック (loggedIn=${loggedIn})`, { reason }));

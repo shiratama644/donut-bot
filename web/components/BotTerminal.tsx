@@ -49,6 +49,9 @@ export default function BotTerminal({ ws, actions }: Props) {
       } else if (msg.type === "chat") {
         const time = msg.time ? `\x1b[90m${sanitizeForTerminal(msg.time.slice(11, 19))}\x1b[0m ` : "";
         term.writeln(`${time}\x1b[36m[CHAT]\x1b[0m ${sanitizeForTerminal(msg.text)}`);
+      } else if (msg.type === "actionbar") {
+        const time = msg.time ? `\x1b[90m${sanitizeForTerminal(msg.time.slice(11, 19))}\x1b[0m ` : "";
+        term.writeln(`${time}\x1b[33m[ACTIONBAR]\x1b[0m ${sanitizeForTerminal(msg.text)}`);
       }
     });
   }, [ws]);
