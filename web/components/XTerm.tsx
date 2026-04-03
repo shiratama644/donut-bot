@@ -69,8 +69,9 @@ const XTerm = forwardRef<XTermHandle, Props>(({ options, className }, ref) => {
       termRef.current = null;
       fitAddonRef.current = null;
     };
-  // options は初回のみ適用
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Terminal オプションは初期化時にのみ適用される。xterm.Terminal は初期化後に
+    // オプションを動的に変更する API を持たないため、依存配列を意図的に空にしている。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useImperativeHandle(ref, () => ({

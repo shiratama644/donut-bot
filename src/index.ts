@@ -158,6 +158,8 @@ function createBot(): Bot {
   bot.on("message", (msg) => {
     const text = msg.toString();
     process.stdout.write("\n");
+    // NOTE: chat メッセージは { type:"chat", text, time } として独立ブロードキャストし、
+    // クライアント側でチャット専用の表示を行う。emit() が送る { type:"log" } とは別扱い。
     broadcast({ type: "chat", text, time: ts() });
     emit("chat", `[CHAT] ${text}`);
   });

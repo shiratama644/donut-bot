@@ -18,6 +18,20 @@ const LEVEL_COLOR: Record<string, string> = {
 };
 const RESET = "\x1b[0m";
 
+// 安全でないエスケープシーケンスを除去（OSC, DCS, PM, APC, SOS, CSI等すべて）
+// 受信データは生テキストであることが期待されるため、エスケープシーケンスはすべて除去する
+function sanitizeForTerminal(text: string): string {
+  return text
+    // OSC シーケンス: ESC ] ... ST or BEL
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+    // DCS / PM / APC / SOS: ESC [P X ^ _] ... ST
+    .replace(/\x1b[P_^X][^\x1b]*\x1b\\/g, "")
+    // CSI シーケンス（カラーコード含む全 CSI）: ESC [ ... <final byte>
+    .replace(/\x1b\[[\d;]*[\x40-\x7e]/g, "")
+    // 残った裸の ESC シーケンス
+    .replace(/\x1b[^[\]]/g, "");
+}
+
 export default function BotTerminal({ ws, actions }: Props) {
   const xtermRef = useRef<XTermHandle>(null);
   const [input, setInput] = useState("");
@@ -31,10 +45,10 @@ export default function BotTerminal({ ws, actions }: Props) {
 
       if (msg.type === "log") {
         const color = LEVEL_COLOR[msg.level] ?? "";
-        term.writeln(`${color}${msg.line}${RESET}`);
+        term.writeln(`${color}${sanitizeForTerminal(msg.line)}${RESET}`);
       } else if (msg.type === "chat") {
-        const time = msg.time ? `\x1b[90m${msg.time.slice(11, 19)}\x1b[0m ` : "";
-        term.writeln(`${time}\x1b[36m[CHAT]\x1b[0m ${msg.text}`);
+        const time = msg.time ? `\x1b[90m${sanitizeForTerminal(msg.time.slice(11, 19))}\x1b[0m ` : "";
+        term.writeln(`${time}\x1b[36m[CHAT]\x1b[0m ${sanitizeForTerminal(msg.text)}`);
       }
     });
   }, [ws]);
@@ -54,7 +68,6 @@ export default function BotTerminal({ ws, actions }: Props) {
     const text = input.trim();
     if (!text) return;
     actions.sendChat(text);
-    xtermRef.current?.writeln(`\x1b[35m[SEND] ${text}\x1b[0m`);
     setInput("");
     inputRef.current?.focus();
   }, [input, actions]);
