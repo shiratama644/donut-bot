@@ -1,0 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap");
+@import "tailwindcss";
+
+:root {
+  --color-bg: #0d0d0d;
+  --color-panel: #141414;
+  --color-border: #2a2a2a;
+  --color-green: #39ff14;
+  --color-yellow: #f0c040;
+  --color-red: #ff4444;
+  --color-dim: #555;
+  --color-text: #d4d4d4;
+  --color-btn: #1e1e1e;
+  --color-btn-active: #2f2f1a;
+  --color-btn-border: #404040;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Share Tech Mono", monospace;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* xterm.js overrides */
+.xterm {
+  height: 100%;
+  padding: 8px;
+}
+.xterm-viewport {
+  background-color: transparent !important;
+}

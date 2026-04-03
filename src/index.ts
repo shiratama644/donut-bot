@@ -1,13 +1,8 @@
 import "dotenv/config";
 import http from "http";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import { WebSocketServer, WebSocket } from "ws";
 import mineflayer, { Bot } from "mineflayer";
 import readline from "readline";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ─── 設定 ────────────────────────────────────────────────
 const CONFIG = {
@@ -20,48 +15,52 @@ const CONFIG = {
 
 const WEB_PORT = Number(process.env.WEB_PORT ?? 3000);
 
+// ─── 時刻 ────────────────────────────────────────────────
+function ts(): string {
+  return new Date().toISOString().replace("T", " ").slice(0, 19);
+}
+
 // ─── ログ ────────────────────────────────────────────────
+type LogLevel = "info" | "warn" | "error" | "chat" | "send";
+
 const log = {
-  info:  (msg: string) => console.log (`[INFO]  ${ts()} ${msg}`),
-  warn:  (msg: string) => console.warn (`[WARN]  ${ts()} ${msg}`),
+  info:  (msg: string) => emit("info",  `[INFO]  ${ts()} ${msg}`),
+  warn:  (msg: string) => emit("warn",  `[WARN]  ${ts()} ${msg}`),
   error: (msg: string, err?: unknown) => {
-    console.error(`[ERROR] ${ts()} ${msg}`);
+    emit("error", `[ERROR] ${ts()} ${msg}`);
     if (err instanceof Error) {
-      console.error(`        message : ${err.message}`);
-      console.error(`        stack   : ${err.stack ?? "(no stack)"}`);
+      emit("error", `        message : ${err.message}`);
+      emit("error", `        stack   : ${err.stack ?? "(no stack)"}`);
     } else if (err !== undefined) {
-      console.error(`        detail  : ${JSON.stringify(err)}`);
+      emit("error", `        detail  : ${JSON.stringify(err)}`);
     }
   },
 };
 
-function ts() {
-  return new Date().toISOString().replace("T", " ").slice(0, 19);
+function emit(level: LogLevel, line: string): void {
+  switch (level) {
+    case "warn":  console.warn(line);  break;
+    case "error": console.error(line); break;
+    default:      console.log(line);   break;
+  }
+  broadcast({ type: "log", level, line });
 }
 
 // ─── WebSocket ブロードキャスト ───────────────────────────
-let wss: WebSocketServer;
+let wss: WebSocketServer | undefined;
 
-function broadcast(data: object) {
+function broadcast(data: object): void {
   const msg = JSON.stringify(data);
   wss?.clients.forEach((c) => {
     if (c.readyState === WebSocket.OPEN) c.send(msg);
   });
 }
 
-// ─── HTTP + WebSocket サーバー ────────────────────────────
-function startWebServer(bot: Bot) {
-  const htmlPath = path.join(__dirname, "public", "index.html");
-
+// ─── WebSocket サーバー ───────────────────────────────────
+function startWebSocketServer(bot: Bot): void {
   const server = http.createServer((_req, res) => {
-    try {
-      const html = fs.readFileSync(htmlPath, "utf-8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(html);
-    } catch {
-      res.writeHead(404);
-      res.end("Not found");
-    }
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("DonutSMP Bot WebSocket Server\n");
   });
 
   wss = new WebSocketServer({ server });
@@ -77,20 +76,8 @@ function startWebServer(bot: Bot) {
 
     ws.on("message", (raw) => {
       try {
-        const msg = JSON.parse(raw.toString());
-
-        if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
-          bot.chat(msg.text.trim());
-          log.info(`[SEND/WEB] ${msg.text.trim()}`);
-        }
-
-        if (msg.type === "key" && typeof msg.key === "string" && typeof msg.state === "boolean") {
-          const valid = ["forward","back","left","right","jump","sneak","sprint"] as const;
-          type ControlKey = typeof valid[number];
-          if ((valid as readonly string[]).includes(msg.key)) {
-            bot.setControlState(msg.key as ControlKey, msg.state);
-          }
-        }
+        const msg = JSON.parse(raw.toString()) as Record<string, unknown>;
+        handleClientMessage(bot, msg);
       } catch {
         // 無効なJSON無視
       }
@@ -100,8 +87,24 @@ function startWebServer(bot: Bot) {
   });
 
   server.listen(WEB_PORT, () => {
-    log.info(`Web UI: http://localhost:${WEB_PORT}`);
+    log.info(`WebSocket サーバー起動: ws://localhost:${WEB_PORT}`);
   });
+}
+
+const CONTROL_KEYS = ["forward", "back", "left", "right", "jump", "sneak", "sprint"] as const;
+type ControlKey = typeof CONTROL_KEYS[number];
+
+function handleClientMessage(bot: Bot, msg: Record<string, unknown>): void {
+  if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
+    bot.chat(msg.text.trim());
+    log.info(`[SEND/WEB] ${msg.text.trim()}`);
+  }
+
+  if (msg.type === "key" && typeof msg.key === "string" && typeof msg.state === "boolean") {
+    if ((CONTROL_KEYS as readonly string[]).includes(msg.key)) {
+      bot.setControlState(msg.key as ControlKey, msg.state);
+    }
+  }
 }
 
 // ─── 座標表示 & ブロードキャスト ─────────────────────────
@@ -147,7 +150,7 @@ function createBot(): Bot {
 
   bot.once("spawn", () => {
     log.info("スポーン完了。");
-    startWebServer(bot);
+    startWebSocketServer(bot);
     coordTimer = startCoordDisplay(bot);
     startCommandInput(bot);
   });
@@ -155,8 +158,8 @@ function createBot(): Bot {
   bot.on("message", (msg) => {
     const text = msg.toString();
     process.stdout.write("\n");
-    log.info(`[CHAT] ${text}`);
     broadcast({ type: "chat", text, time: ts() });
+    emit("chat", `[CHAT] ${text}`);
   });
 
   bot.on("kicked",   (reason, loggedIn) => log.error(`キック (loggedIn=${loggedIn})`, { reason }));
