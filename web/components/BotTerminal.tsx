@@ -9,7 +9,6 @@ import {
   useFloating,
 } from "@floating-ui/react";
 import XTerm, { type XTermHandle } from "@/components/XTerm";
-import MobileKeyboardToolbar from "@/components/MobileKeyboardToolbar";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
 
 interface Props {
@@ -94,7 +93,6 @@ export default function BotTerminal({ ws, actions }: Props) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionMode, setSuggestionMode] = useState<SuggestionMode>("history");
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [inputFocused, setInputFocused] = useState(false);
   const isOpen = suggestions.length > 0;
   const tabCompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { onMessage, connected } = ws;
@@ -227,52 +225,9 @@ export default function BotTerminal({ ws, actions }: Props) {
     inputRef.current?.focus();
   }, [input, actions, addToHistory]);
 
-  // モバイルツールバー用のキー操作ハンドラー
-  const handleToolbarArrowDown = useCallback(() => {
-    if (suggestions.length > 0) {
-      setHighlightedIndex((i) => (i + 1) % suggestions.length);
-    }
-  }, [suggestions.length]);
-
-  const handleToolbarArrowUp = useCallback(() => {
-    if (suggestions.length > 0) {
-      setHighlightedIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
-    }
-  }, [suggestions.length]);
-
-  const handleToolbarTab = useCallback(() => {
-    if (suggestions.length > 0) {
-      selectSuggestion(
-        suggestions[highlightedIndex >= 0 ? highlightedIndex : 0],
-        suggestionMode,
-        input,
-      );
-    }
-  }, [suggestions, highlightedIndex, suggestionMode, input, selectSuggestion]);
-
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (isOpen) {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setHighlightedIndex((i) => (i + 1) % suggestions.length);
-          return;
-        }
-        if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setHighlightedIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
-          return;
-        }
-        // Tab: 先頭またはハイライト中のサジェストを補完する
-        if (e.key === "Tab") {
-          e.preventDefault();
-          selectSuggestion(
-            suggestions[highlightedIndex >= 0 ? highlightedIndex : 0],
-            suggestionMode,
-            input,
-          );
-          return;
-        }
         // Enter: ハイライト中のサジェストがあれば補完、なければ送信
         if (e.key === "Enter" && highlightedIndex >= 0) {
           e.preventDefault();
@@ -295,7 +250,6 @@ export default function BotTerminal({ ws, actions }: Props) {
     setTimeout(() => {
       setSuggestions([]);
       setHighlightedIndex(-1);
-      setInputFocused(false);
     }, 150);
   }, []);
 
@@ -360,7 +314,6 @@ export default function BotTerminal({ ws, actions }: Props) {
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => setInputFocused(true)}
           onBlur={handleBlur}
           placeholder="/say こんにちは"
           autoComplete="new-password"
@@ -390,14 +343,6 @@ export default function BotTerminal({ ws, actions }: Props) {
           SEND
         </button>
       </div>
-
-      {/* モバイルキーボードツールバー */}
-      <MobileKeyboardToolbar
-        visible={inputFocused}
-        onTab={handleToolbarTab}
-        onArrowUp={handleToolbarArrowUp}
-        onArrowDown={handleToolbarArrowDown}
-      />
     </div>
   );
 }
