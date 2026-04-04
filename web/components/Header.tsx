@@ -15,22 +15,43 @@ export default function Header({ position, connected, theme, onToggleTheme }: Pr
 
   return (
     <header className="app-header" role="banner">
-      <span className="app-header__icon">⛏</span>
-      <span className="app-header__channel">minecraft</span>
-
-      <div className="app-header__divider" />
+      <div className="app-header__brand">
+        <div className="app-header__logo">⛏</div>
+        <div>
+          <div className="app-header__title">Donut Bot</div>
+          <div className="app-header__subtitle">Minecraft Controller</div>
+        </div>
+      </div>
 
       <div className="app-header__spacer" />
 
-      {position ? (
+      {position && (
         <div className="app-header__pos" aria-label="ボット座標">
-          <span>X: {fmt(position.x)}</span>
-          <span>Y: {fmt(position.y)}</span>
-          <span>Z: {fmt(position.z)}</span>
+          <span className="app-header__pos-label">X</span>
+          {fmt(position.x)}
+          <span className="app-header__pos-sep">·</span>
+          <span className="app-header__pos-label">Y</span>
+          {fmt(position.y)}
+          <span className="app-header__pos-sep">·</span>
+          <span className="app-header__pos-label">Z</span>
+          {fmt(position.z)}
         </div>
-      ) : (
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>位置情報なし</span>
       )}
+
+      <div
+        className="app-header__status-badge"
+        aria-label={connected ? "接続中" : "切断中"}
+        title={connected ? "接続中" : "切断中"}
+      >
+        <span
+          className={`app-header__status-dot ${
+            connected
+              ? "app-header__status-dot--online"
+              : "app-header__status-dot--offline"
+          }`}
+        />
+        {connected ? "Online" : "Offline"}
+      </div>
 
       <button
         type="button"
@@ -41,14 +62,6 @@ export default function Header({ position, connected, theme, onToggleTheme }: Pr
       >
         {theme === "dark" ? "☀️" : "🌙"}
       </button>
-
-      <span
-        className={`app-header__status ${
-          connected ? "app-header__status--online" : "app-header__status--offline"
-        }`}
-        aria-label={connected ? "オンライン" : "オフライン"}
-        title={connected ? "接続中" : "切断中"}
-      />
     </header>
   );
 }
