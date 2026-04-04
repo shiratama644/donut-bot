@@ -259,13 +259,13 @@ body {
 
 /* 送信メッセージ (sent) */
 .msg-entry--sent {
-  border-left: 3px solid var(--c-purple);
-  padding-left: 17px;
-  background: rgba(188, 140, 255, 0.06);
+  border-right: 3px solid var(--c-green);
+  padding-right: 17px;
+  background: rgba(63, 185, 80, 0.06);
 }
 
 .msg-entry--sent:hover {
-  background: rgba(188, 140, 255, 0.1);
+  background: rgba(63, 185, 80, 0.1);
 }
 
 /* サーバーチャット (chat) */
@@ -531,7 +531,10 @@ input::-webkit-credentials-auto-fill-button {
     padding: 3px 12px;
   }
 
-  .msg-entry--sent,
+  .msg-entry--sent {
+    padding-right: 9px;
+  }
+
   .msg-entry--chat,
   .msg-entry--actionbar {
     padding-left: 9px;
