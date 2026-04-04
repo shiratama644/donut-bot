@@ -16,7 +16,11 @@ export function useTheme(): { theme: Theme; toggleTheme: () => void } {
       if (saved === "dark" || saved === "light") {
         initial = saved;
       } else {
-        initial = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        const prefersDark =
+          typeof window.matchMedia === "function"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+            : true;
+        initial = prefersDark ? "dark" : "light";
       }
     } catch {
       // ignore
