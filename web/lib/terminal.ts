@@ -14,15 +14,15 @@ export function sanitizeForTerminal(text: string): string {
     .replace(/\x1b[^[\]]/g, "");
 }
 
-/** ISO タイムスタンプ "YYYY-MM-DD HH:MM:SS" の最小文字数 */
-const ISO_TIMESTAMP_MIN_LENGTH = 19;
+/** タイムスタンプ文字列 "YYYY-MM-DD HH:MM:SS" の最小文字数 */
+const TIMESTAMP_MIN_LENGTH = 19;
 
 /**
  * ISO タイムスタンプ文字列から HH:MM:SS 部分を抽出してサニタイズする
  * `isoTime` は "YYYY-MM-DD HH:MM:SS" 形式（19文字以上）を想定する
  */
 export function formatMsgTime(isoTime: string): string {
-  if (isoTime.length < ISO_TIMESTAMP_MIN_LENGTH) return sanitizeForTerminal(isoTime);
+  if (isoTime.length < TIMESTAMP_MIN_LENGTH) return sanitizeForTerminal(isoTime);
   return sanitizeForTerminal(isoTime.slice(11, 19));
 }
 

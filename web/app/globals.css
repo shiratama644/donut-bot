@@ -33,11 +33,154 @@ input::-webkit-credentials-auto-fill-button {
   position: absolute;
 }
 
-/* xterm.js overrides */
-.xterm {
-  height: 100%;
-  padding: 8px;
+/* ─── chatscope ダークテーマ上書き ─── */
+
+/* MainContainer */
+.cs-main-container,
+.donut-main {
+  border: none !important;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  font-family: "Share Tech Mono", monospace !important;
+  font-size: 13px !important;
 }
-.xterm-viewport {
+
+/* ChatContainer */
+.cs-chat-container {
+  background-color: var(--color-panel) !important;
+  color: var(--color-text) !important;
+  min-width: 0 !important;
+}
+
+/* MessageList */
+.cs-message-list {
+  background-color: var(--color-panel) !important;
+  color: var(--color-text) !important;
+  /* flex で伸縮できるように height:100% を上書き */
+  flex: 1 !important;
+}
+
+/* メッセージバブル — 背景・影・ボーダーを除去してフラットなリスト表示に */
+.cs-message {
   background-color: transparent !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.cs-message:only-child,
+.cs-message:not(:only-child) {
+  margin: 0 !important;
+}
+.cs-message__content {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--color-text) !important;
+  font-family: "Share Tech Mono", monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  padding: 2px 0 !important;
+  border-radius: 0 !important;
+}
+.cs-message__content-wrapper {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* MessageSeparator */
+.cs-message-separator {
+  background-color: transparent !important;
+  color: var(--color-dim) !important;
+  font-family: "Share Tech Mono", monospace !important;
+  font-size: 0.75rem !important;
+  margin: 6px 0 !important;
+}
+.cs-message-separator::before,
+.cs-message-separator::after {
+  background-color: var(--color-border) !important;
+}
+
+/* カスタム入力エリア（cs-message-input クラスを流用） */
+.donut-input-area {
+  padding: 0 !important;
+  background-color: var(--color-panel) !important;
+  border-top: 1px solid var(--color-border) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* サジェストリスト */
+.donut-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 160px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--color-border);
+}
+.donut-suggestions li button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: "Share Tech Mono", monospace;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.donut-suggestions li:last-child button {
+  border-bottom: none;
+}
+.donut-suggestions li button:active {
+  background-color: var(--color-btn-active);
+}
+
+/* 入力バー */
+.donut-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  align-items: center;
+}
+
+.donut-input {
+  flex: 1;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  outline: none;
+  min-width: 0;
+}
+.donut-input::placeholder {
+  opacity: 0.4;
+}
+.donut-input:focus {
+  border-color: var(--color-dim);
+}
+
+.donut-send-btn {
+  flex-shrink: 0;
+  background-color: var(--color-green);
+  color: #0d0d0d;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-family: "VT323", monospace;
+  font-size: 1.25rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.donut-send-btn:active {
+  opacity: 0.8;
 }

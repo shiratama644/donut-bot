@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 const HISTORY_KEY = "donut-bot-cmd-history";
-const MAX_HISTORY = 30;
+/** 保存するコマンド履歴の最大件数 */
+const MAX_COMMAND_HISTORY_SIZE = 30;
 
 export function useCommandHistory() {
   const [history, setHistory] = useState<string[]>([]);
@@ -24,7 +25,7 @@ export function useCommandHistory() {
 
   const add = useCallback((cmd: string) => {
     setHistory((prev) => {
-      const next = [cmd, ...prev.filter((c) => c !== cmd)].slice(0, MAX_HISTORY);
+      const next = [cmd, ...prev.filter((c) => c !== cmd)].slice(0, MAX_COMMAND_HISTORY_SIZE);
       try {
         localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
       } catch {
