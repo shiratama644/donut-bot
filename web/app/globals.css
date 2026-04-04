@@ -257,6 +257,39 @@ body {
   background: rgba(124, 106, 247, 0.04);
 }
 
+/* 送信メッセージ (sent) */
+.msg-entry--sent {
+  border-left: 3px solid var(--c-purple);
+  padding-left: 17px;
+  background: rgba(188, 140, 255, 0.06);
+}
+
+.msg-entry--sent:hover {
+  background: rgba(188, 140, 255, 0.1);
+}
+
+/* サーバーチャット (chat) */
+.msg-entry--chat {
+  border-left: 3px solid var(--c-cyan);
+  padding-left: 17px;
+  background: rgba(88, 166, 255, 0.06);
+}
+
+.msg-entry--chat:hover {
+  background: rgba(88, 166, 255, 0.1);
+}
+
+/* アクションバー (actionbar) */
+.msg-entry--actionbar {
+  border-left: 3px solid var(--c-yellow);
+  padding-left: 17px;
+  background: rgba(210, 153, 34, 0.06);
+}
+
+.msg-entry--actionbar:hover {
+  background: rgba(210, 153, 34, 0.1);
+}
+
 /* ─── System Badge ────────────────────────────────────── */
 
 .msg-separator {
@@ -472,6 +505,12 @@ input::-webkit-credentials-auto-fill-button {
   /* Messages: reduce horizontal padding */
   .msg-entry {
     padding: 3px 12px;
+  }
+
+  .msg-entry--sent,
+  .msg-entry--chat,
+  .msg-entry--actionbar {
+    padding-left: 9px;
   }
 
   .msg-separator {
