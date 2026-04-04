@@ -11,7 +11,12 @@ export function useCommandHistory() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(HISTORY_KEY);
-      if (saved) setHistory(JSON.parse(saved) as string[]);
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+          setHistory(parsed as string[]);
+        }
+      }
     } catch {
       // ignore
     }

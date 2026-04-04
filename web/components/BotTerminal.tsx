@@ -8,7 +8,6 @@ import {
   size as sizeMiddleware,
   useFloating,
 } from "@floating-ui/react";
-import XTerm, { type XTermHandle } from "@/components/XTerm";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
 import { useCommandHistory } from "@/hooks/useCommandHistory";
 import { sanitizeForTerminal, formatMsgTime, applyCompletion } from "@/lib/terminal";
@@ -18,14 +17,19 @@ interface Props {
   actions: BotWebSocketActions;
 }
 
+// ─── ログエントリ型 ───────────────────────────────────────
+type TerminalEntry =
+  | { id: number; type: "log"; level: string; line: string }
+  | { id: number; type: "chat" | "actionbar"; text: string; time?: string }
+  | { id: number; type: "sys"; text: string; ok: boolean };
+
+// ─── 定数 ────────────────────────────────────────────────
 const LEVEL_COLOR: Record<string, string> = {
-  info:  "\x1b[32m",   // green
-  warn:  "\x1b[33m",   // yellow
-  error: "\x1b[31m",   // red
-  chat:  "\x1b[36m",   // cyan
-  send:  "\x1b[35m",   // magenta
+  info:  "var(--color-green)",
+  warn:  "var(--color-yellow)",
+  error: "var(--color-red)",
+  send:  "#c678dd",
 };
-const RESET = "\x1b[0m";
 
 /** タブ補完リクエストのデバウンス遅延 (ms) */
 const DEBOUNCE_TAB_COMPLETE_MS = 250;
@@ -35,11 +39,52 @@ const MAX_HISTORY_SUGGESTIONS = 8;
 const MAX_TAB_SUGGESTIONS = 10;
 /** blur 後にドロップダウンを閉じるまでの遅延 (ms) — マウスクリック選択を妨げないため */
 const BLUR_CLOSE_DELAY_MS = 150;
+/** ログ表示の最大保持件数 */
+const MAX_LOG_ENTRIES = 500;
 
+// コンポーネントのライフタイムを超えてユニーク ID を保持するカウンター
+let nextEntryId = 0;
+
+// ─── 単一ログ行のレンダリング ─────────────────────────────
+function EntryRow({ entry }: { entry: TerminalEntry }) {
+  if (entry.type === "log") {
+    return (
+      <div style={{ color: LEVEL_COLOR[entry.level] ?? "var(--color-text)", wordBreak: "break-word" }}>
+        {sanitizeForTerminal(entry.line)}
+      </div>
+    );
+  }
+  if (entry.type === "chat" || entry.type === "actionbar") {
+    const isChat = entry.type === "chat";
+    return (
+      <div style={{ wordBreak: "break-word" }}>
+        {entry.time && (
+          <span style={{ color: "var(--color-dim)" }}>{formatMsgTime(entry.time)} </span>
+        )}
+        <span style={{ color: isChat ? "#56b6c2" : "var(--color-yellow)" }}>
+          {isChat ? "[CHAT]" : "[ACTIONBAR]"}{" "}
+        </span>
+        <span style={{ color: "var(--color-text)" }}>{sanitizeForTerminal(entry.text)}</span>
+      </div>
+    );
+  }
+  // type === "sys"
+  if (entry.type === "sys") {
+    return (
+      <div style={{ color: entry.ok ? "var(--color-green)" : "var(--color-yellow)" }}>
+        {entry.text}
+      </div>
+    );
+  }
+  return null;
+}
+
+// ─── メインコンポーネント ─────────────────────────────────
 type SuggestionMode = "history" | "tabcomplete";
 
 export default function BotTerminal({ ws, actions }: Props) {
-  const xtermRef = useRef<XTermHandle>(null);
+  const [entries, setEntries] = useState<TerminalEntry[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { history, add: addToHistory } = useCommandHistory();
@@ -49,6 +94,8 @@ export default function BotTerminal({ ws, actions }: Props) {
   const isOpen = suggestions.length > 0;
   const tabCompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { onMessage, connected } = ws;
+  /** 履歴ナビゲーション中のインデックス (-1 = 現在の入力) */
+  const [historyIdx, setHistoryIdx] = useState(-1);
 
   // @floating-ui/react でドロップダウンを入力バーの上（スマホではキーボードの上）に配置する
   const { refs, floatingStyles } = useFloating({
@@ -69,36 +116,41 @@ export default function BotTerminal({ ws, actions }: Props) {
     whileElementsMounted: autoUpdate,
   });
 
-  // メッセージを端末に書き込む
+  // ログエントリを追加し、上限を超えた分を先頭から削除する
+  const addEntry = useCallback((entry: TerminalEntry) => {
+    setEntries((prev) => {
+      const next = [...prev, entry];
+      return next.length > MAX_LOG_ENTRIES ? next.slice(next.length - MAX_LOG_ENTRIES) : next;
+    });
+  }, []);
+
+  // 新しいエントリが追加されたら末尾へ自動スクロール
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
+  }, [entries]);
+
+  // WebSocket メッセージをログエントリに変換して追加
   useEffect(() => {
     return onMessage((msg) => {
-      const term = xtermRef.current;
-      if (!term) return;
-
       if (msg.type === "log") {
-        const color = LEVEL_COLOR[msg.level] ?? "";
-        term.writeln(`${color}${sanitizeForTerminal(msg.line)}${RESET}`);
+        addEntry({ id: nextEntryId++, type: "log", level: msg.level, line: msg.line });
       } else if (msg.type === "chat" || msg.type === "actionbar") {
-        const time = msg.time ? `\x1b[90m${formatMsgTime(msg.time)}\x1b[0m ` : "";
-        const [label, labelColor] =
-          msg.type === "chat" ? ["[CHAT]", "\x1b[36m"] : ["[ACTIONBAR]", "\x1b[33m"];
-        term.writeln(`${time}${labelColor}${label}\x1b[0m ${sanitizeForTerminal(msg.text)}`);
+        addEntry({ id: nextEntryId++, type: msg.type, text: msg.text, time: msg.time });
       }
     });
-  }, [onMessage]);
+  }, [onMessage, addEntry]);
 
-  // 接続/切断メッセージ
+  // 接続状態の変化をシステムメッセージとして表示
   useEffect(() => {
-    const term = xtermRef.current;
-    if (!term) return;
-    if (connected) {
-      term.writeln("\x1b[32m[SYS] 接続しました\x1b[0m");
-    } else {
-      term.writeln("\x1b[33m[SYS] 切断されました。再接続中…\x1b[0m");
-    }
-  }, [connected]);
+    addEntry({
+      id: nextEntryId++,
+      type: "sys",
+      text: connected ? "[SYS] 接続しました" : "[SYS] 切断されました。再接続中…",
+      ok: connected,
+    });
+  }, [connected, addEntry]);
 
-  // タブ補完タイマーをクリーンアップ
+  // タブ補完タイマーのクリーンアップ
   useEffect(() => {
     return () => {
       if (tabCompleteTimer.current) clearTimeout(tabCompleteTimer.current);
@@ -128,11 +180,12 @@ export default function BotTerminal({ ws, actions }: Props) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
       setInput(val);
+      setHistoryIdx(-1);
 
       if (tabCompleteTimer.current) clearTimeout(tabCompleteTimer.current);
 
       if (val.startsWith("/")) {
-        // "/" から始まる入力: Minecraftサーバーにタブ補完をリクエスト（250ms デバウンス）
+        // "/" から始まる入力: Minecraftサーバーにタブ補完をリクエスト（デバウンス付き）
         setSuggestions([]);
         setHighlightedIndex(-1);
         tabCompleteTimer.current = setTimeout(() => {
@@ -174,13 +227,30 @@ export default function BotTerminal({ ws, actions }: Props) {
     setInput("");
     setSuggestions([]);
     setHighlightedIndex(-1);
+    setHistoryIdx(-1);
     inputRef.current?.focus();
   }, [input, actions, addToHistory]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (isOpen) {
-        // Enter: ハイライト中のサジェストがあれば補完、なければ送信
+        // サジェストドロップダウンが開いている場合のキー操作
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setHighlightedIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setHighlightedIndex((i) => (i >= suggestions.length - 1 ? 0 : i + 1));
+          return;
+        }
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
+          selectSuggestion(suggestions[idx], suggestionMode, input);
+          return;
+        }
         if (e.key === "Enter" && highlightedIndex >= 0) {
           e.preventDefault();
           selectSuggestion(suggestions[highlightedIndex], suggestionMode, input);
@@ -192,9 +262,35 @@ export default function BotTerminal({ ws, actions }: Props) {
           return;
         }
       }
+
+      if (!isOpen) {
+        // サジェストが閉じている場合: 矢印キーでコマンド履歴を辿る
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const nextIdx = Math.min(historyIdx + 1, history.length - 1);
+          if (history[nextIdx] !== undefined) {
+            setHistoryIdx(nextIdx);
+            setInput(history[nextIdx]);
+          }
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (historyIdx > 0) {
+            const nextIdx = historyIdx - 1;
+            setHistoryIdx(nextIdx);
+            setInput(history[nextIdx]);
+          } else if (historyIdx === 0) {
+            setHistoryIdx(-1);
+            setInput("");
+          }
+          return;
+        }
+      }
+
       if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
     },
-    [isOpen, suggestions, highlightedIndex, suggestionMode, input, selectSuggestion, handleSend],
+    [isOpen, suggestions, highlightedIndex, suggestionMode, input, selectSuggestion, handleSend, history, historyIdx],
   );
 
   const handleBlur = useCallback(() => {
@@ -207,16 +303,28 @@ export default function BotTerminal({ ws, actions }: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* xterm.js ターミナル */}
-      <div className="min-h-0 flex-1 overflow-hidden" style={{ backgroundColor: "var(--color-panel)" }}>
-        <XTerm ref={xtermRef} className="h-full w-full" />
+      {/* ログ表示エリア */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto"
+        style={{
+          backgroundColor: "var(--color-panel)",
+          padding: "8px 12px",
+          fontFamily: '"Share Tech Mono", monospace',
+          fontSize: "13px",
+          lineHeight: "1.6",
+        }}
+      >
+        {entries.map((entry) => (
+          <EntryRow key={entry.id} entry={entry} />
+        ))}
+        <div ref={bottomRef} />
       </div>
 
       {/* 予測変換ドロップダウン（@floating-ui/react により入力バーの上に固定配置） */}
       <ul
         ref={refs.setFloating}
         role="listbox"
-        aria-label="予測変換候補"
+        aria-label="候補"
         style={{
           ...floatingStyles,
           display: isOpen ? "block" : "none",
@@ -226,6 +334,8 @@ export default function BotTerminal({ ws, actions }: Props) {
           margin: 0,
           border: "1px solid var(--color-border)",
           backgroundColor: "var(--color-panel)",
+          fontFamily: '"Share Tech Mono", monospace',
+          fontSize: "0.875rem",
           zIndex: 100,
         }}
       >
@@ -242,11 +352,8 @@ export default function BotTerminal({ ws, actions }: Props) {
             style={{
               padding: "6px 14px",
               cursor: "pointer",
-              fontFamily: '"Share Tech Mono", monospace',
-              fontSize: "0.875rem",
               color: highlightedIndex === idx ? "#0d0d0d" : "var(--color-text)",
-              backgroundColor:
-                highlightedIndex === idx ? "var(--color-green)" : "transparent",
+              backgroundColor: highlightedIndex === idx ? "var(--color-green)" : "transparent",
             }}
           >
             {item}
@@ -263,6 +370,9 @@ export default function BotTerminal({ ws, actions }: Props) {
         <input
           ref={inputRef}
           type="text"
+          name="chat-input"
+          inputMode="text"
+          aria-label="チャット入力"
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -272,8 +382,6 @@ export default function BotTerminal({ ws, actions }: Props) {
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          data-form-type="other"
-          data-lpignore="true"
           enterKeyHint="send"
           className="flex-1 bg-transparent px-3.5 py-3 text-sm outline-none placeholder:opacity-40"
           style={{
