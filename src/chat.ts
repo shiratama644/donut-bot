@@ -20,6 +20,7 @@ const SECTION_TO_ANSI: Record<string, string> = {
   "d": "\x1b[95m",        // Light Purple
   "e": "\x1b[93m",        // Yellow
   "f": "\x1b[97m",        // White
+  "k": "",                // Obfuscated (端末では表現不可)
   "l": "\x1b[1m",         // Bold
   "m": "\x1b[9m",         // Strikethrough
   "n": "\x1b[4m",         // Underline
@@ -32,9 +33,11 @@ const SECTION_TO_ANSI: Record<string, string> = {
  * §k (obfuscated) は § なしの空文字へ変換する。
  */
 export function sectionToAnsi(text: string): string {
-  return text.replace(/§([0-9a-fk-or])/gi, (_, code: string) => {
+  const converted = text.replace(/§([0-9a-fk-or])/gi, (_, code: string) => {
     return SECTION_TO_ANSI[code.toLowerCase()] ?? "";
-  }) + "\x1b[0m";
+  });
+  // テキストが既にリセットコードで終わっていない場合のみリセットを付加
+  return converted.endsWith("\x1b[0m") ? converted : converted + "\x1b[0m";
 }
 
 // ─── チャットメッセージハンドラ ────────────────────────────
