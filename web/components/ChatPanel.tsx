@@ -4,7 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
 import { useMessageHistory } from "@/hooks/useMessageHistory";
-import { sanitizeText, formatMsgTime } from "@/lib/sanitize";
+import { sanitizeText, stripMinecraftFormatting, formatMsgTime } from "@/lib/sanitize";
+
+/** Minecraft §コードを除去したうえで ANSI エスケープもサニタイズする */
+function sanitizeChatText(text: string): string {
+  return sanitizeText(stripMinecraftFormatting(text));
+}
 
 interface Props {
   ws: Pick<BotWebSocketState, "onMessage" | "connected">;
@@ -51,13 +56,17 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
     <div className={`msg-chat-row ${isChat ? "msg-chat" : "msg-actionbar"}`}>
       <div className="msg-header">
         <span className="msg-sender">
-          {isChat ? "💬 Minecraft Chat" : "🎯 Action Bar"}
+          {isChat ? (
+            <><span className="material-symbols-outlined msg-icon">chat_bubble</span> Minecraft Chat</>
+          ) : (
+            <><span className="material-symbols-outlined msg-icon">bolt</span> Action Bar</>
+          )}
         </span>
         {entry.time && (
           <span className="msg-time">{formatMsgTime(entry.time)}</span>
         )}
       </div>
-      <span className="msg-body">{sanitizeText(entry.text)}</span>
+      <span className="msg-body">{sanitizeChatText(entry.text)}</span>
     </div>
   );
 }

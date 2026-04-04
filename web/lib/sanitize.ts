@@ -14,6 +14,15 @@ export function sanitizeText(text: string): string {
     .replace(/\x1b[^[\]]/g, "");
 }
 
+/**
+ * Minecraft の § カラーコード・フォーマットコードをすべて除去する。
+ * - 標準コード: §[0-9a-fk-or]
+ * - 16進カラーコード: §#RRGGBB（一部サーバー独自拡張）
+ */
+export function stripMinecraftFormatting(text: string): string {
+  return text.replace(/§(?:#[0-9a-fA-F]{6}|[0-9a-fk-orA-FK-OR])/g, "");
+}
+
 /** タイムスタンプ文字列 "YYYY-MM-DD HH:MM:SS" の最小文字数 */
 const TIMESTAMP_MIN_LENGTH = 19;
 

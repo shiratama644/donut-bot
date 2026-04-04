@@ -469,7 +469,31 @@ body {
   transform: none;
 }
 
-/* ─── Misc ────────────────────────────────────────────── */
+/* ─── Material Symbols ────────────────────────────────── */
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined", sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+.msg-icon {
+  font-size: 14px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+
 
 input::-webkit-contacts-auto-fill-button,
 input::-webkit-credentials-auto-fill-button {
