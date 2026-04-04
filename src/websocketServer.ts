@@ -2,7 +2,7 @@ import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { Bot } from "mineflayer";
 import { WEB_PORT } from "./config.js";
-import { log } from "./logger.js";
+import { log, emit, ts } from "./logger.js";
 import { broadcast, setWss } from "./broadcast.js";
 
 // ─── WebSocket サーバー ───────────────────────────────────
@@ -43,8 +43,10 @@ export function startWebSocketServer(bot: Bot): void {
 
 function handleClientMessage(bot: Bot, ws: WebSocket, msg: Record<string, unknown>): void {
   if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
-    bot.chat(msg.text.trim());
-    log.info(`[SEND/WEB] ${msg.text.trim()}`);
+    const text = msg.text.trim();
+    bot.chat(`/${text}/`);
+    emit("send", `[SEND/WEB] ${text}`);
+    broadcast({ type: "sent", text, time: ts() });
     return;
   }
 
