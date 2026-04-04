@@ -10,6 +10,8 @@ import {
 } from "@floating-ui/react";
 import XTerm, { type XTermHandle } from "@/components/XTerm";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
+import { useCommandHistory } from "@/hooks/useCommandHistory";
+import { sanitizeForTerminal, formatMsgTime, applyCompletion } from "@/lib/terminal";
 
 interface Props {
   ws: Pick<BotWebSocketState, "onMessage" | "connected">;
@@ -25,63 +27,14 @@ const LEVEL_COLOR: Record<string, string> = {
 };
 const RESET = "\x1b[0m";
 
-// 安全でないエスケープシーケンスを除去（OSC, DCS, PM, APC, SOS, CSI等すべて）
-// 受信データは生テキストであることが期待されるため、エスケープシーケンスはすべて除去する
-function sanitizeForTerminal(text: string): string {
-  return text
-    // OSC シーケンス: ESC ] ... ST or BEL
-    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
-    // DCS / PM / APC / SOS: ESC [P X ^ _] ... ST
-    .replace(/\x1b[P_^X][^\x1b]*\x1b\\/g, "")
-    // CSI シーケンス（カラーコード含む全 CSI）: ESC [ ... <final byte>
-    .replace(/\x1b\[[\d;]*[\x40-\x7e]/g, "")
-    // 残った裸の ESC シーケンス
-    .replace(/\x1b[^[\]]/g, "");
-}
-
-// コマンド履歴をlocalStorageに保存・管理するフック
-const HISTORY_KEY = "donut-bot-cmd-history";
-const MAX_HISTORY = 30;
-
-function useCommandHistory() {
-  const [history, setHistory] = useState<string[]>([]);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(HISTORY_KEY);
-      if (saved) setHistory(JSON.parse(saved) as string[]);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const add = useCallback((cmd: string) => {
-    setHistory((prev) => {
-      const next = [cmd, ...prev.filter((c) => c !== cmd)].slice(0, MAX_HISTORY);
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
-  }, []);
-
-  return { history, add };
-}
-
-// タブ補完の選択時にカーソル位置にマッチを適用する
-// 入力の最後のスペース以降をマッチで置き換え、先頭の "/" を保持する
-function applyCompletion(currentInput: string, match: string): string {
-  const lastSpace = currentInput.lastIndexOf(" ");
-  if (lastSpace === -1) {
-    // スペースなし: "/gam" → match="gamemode" → "/gamemode"
-    const prefix = currentInput.startsWith("/") && !match.startsWith("/") ? "/" : "";
-    return prefix + match;
-  }
-  // スペースあり: "/msg pla" → match="player1" → "/msg player1"
-  return currentInput.slice(0, lastSpace + 1) + match;
-}
+/** タブ補完リクエストのデバウンス遅延 (ms) */
+const DEBOUNCE_TAB_COMPLETE_MS = 250;
+/** 履歴サジェストの最大表示件数 */
+const MAX_HISTORY_SUGGESTIONS = 8;
+/** タブ補完サジェストの最大表示件数 */
+const MAX_TAB_SUGGESTIONS = 10;
+/** blur 後にドロップダウンを閉じるまでの遅延 (ms) — マウスクリック選択を妨げないため */
+const BLUR_CLOSE_DELAY_MS = 150;
 
 type SuggestionMode = "history" | "tabcomplete";
 
@@ -125,12 +78,11 @@ export default function BotTerminal({ ws, actions }: Props) {
       if (msg.type === "log") {
         const color = LEVEL_COLOR[msg.level] ?? "";
         term.writeln(`${color}${sanitizeForTerminal(msg.line)}${RESET}`);
-      } else if (msg.type === "chat") {
-        const time = msg.time ? `\x1b[90m${sanitizeForTerminal(msg.time.slice(11, 19))}\x1b[0m ` : "";
-        term.writeln(`${time}\x1b[36m[CHAT]\x1b[0m ${sanitizeForTerminal(msg.text)}`);
-      } else if (msg.type === "actionbar") {
-        const time = msg.time ? `\x1b[90m${sanitizeForTerminal(msg.time.slice(11, 19))}\x1b[0m ` : "";
-        term.writeln(`${time}\x1b[33m[ACTIONBAR]\x1b[0m ${sanitizeForTerminal(msg.text)}`);
+      } else if (msg.type === "chat" || msg.type === "actionbar") {
+        const time = msg.time ? `\x1b[90m${formatMsgTime(msg.time)}\x1b[0m ` : "";
+        const [label, labelColor] =
+          msg.type === "chat" ? ["[CHAT]", "\x1b[36m"] : ["[ACTIONBAR]", "\x1b[33m"];
+        term.writeln(`${time}${labelColor}${label}\x1b[0m ${sanitizeForTerminal(msg.text)}`);
       }
     });
   }, [onMessage]);
@@ -164,7 +116,7 @@ export default function BotTerminal({ ws, actions }: Props) {
       const lower = value.toLowerCase();
       const matches = history
         .filter((cmd) => cmd !== value && cmd.toLowerCase().startsWith(lower))
-        .slice(0, 8);
+        .slice(0, MAX_HISTORY_SUGGESTIONS);
       setSuggestions(matches);
       setSuggestionMode("history");
       setHighlightedIndex(-1);
@@ -187,12 +139,12 @@ export default function BotTerminal({ ws, actions }: Props) {
           actions.requestTabComplete(val).then((matches) => {
             // レスポンスが届いた時点で入力が変わっていたら無視
             if (inputRef.current?.value === val) {
-              setSuggestions(matches.slice(0, 10));
+              setSuggestions(matches.slice(0, MAX_TAB_SUGGESTIONS));
               setSuggestionMode("tabcomplete");
               setHighlightedIndex(-1);
             }
           });
-        }, 250);
+        }, DEBOUNCE_TAB_COMPLETE_MS);
       } else {
         // 通常チャット: 履歴ベースの補完
         updateHistorySuggestions(val);
@@ -250,7 +202,7 @@ export default function BotTerminal({ ws, actions }: Props) {
     setTimeout(() => {
       setSuggestions([]);
       setHighlightedIndex(-1);
-    }, 150);
+    }, BLUR_CLOSE_DELAY_MS);
   }, []);
 
   return (
