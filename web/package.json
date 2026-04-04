@@ -8,9 +8,8 @@
     "start": "next start -p 3001"
   },
   "dependencies": {
-    "@floating-ui/react": "^0.27.19",
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/xterm": "^6.0.0",
+    "@chatscope/chat-ui-kit-react": "^2.1.1",
+    "@chatscope/chat-ui-kit-styles": "^1.4.0",
     "next": "^16.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

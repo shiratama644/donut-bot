@@ -14,6 +14,12 @@ const CONFIG = {
 
 const WEB_PORT = Number(process.env.WEB_PORT ?? 3000);
 
+// ─── 定数 ────────────────────────────────────────────────
+/** 移動イベントのブロードキャスト最小間隔 (ms) */
+const MOVE_THROTTLE_MS = 150;
+/** 座標をコンソールと WebSocket へ定期送信する間隔 (ms) */
+const COORD_DISPLAY_INTERVAL_MS = 500;
+
 // ─── 時刻 ────────────────────────────────────────────────
 function ts(): string {
   return new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -126,7 +132,7 @@ function startCoordDisplay(bot: Bot): ReturnType<typeof setInterval> {
       `\r[POS] X: ${pos.x.toFixed(2).padStart(9)}  Y: ${pos.y.toFixed(2).padStart(7)}  Z: ${pos.z.toFixed(2).padStart(9)}   `
     );
     broadcast({ type: "pos", x: pos.x, y: pos.y, z: pos.z });
-  }, 500);
+  }, COORD_DISPLAY_INTERVAL_MS);
 }
 
 // ─── Bot ─────────────────────────────────────────────────
@@ -148,7 +154,7 @@ function createBot(): Bot {
   let lastMoveBroadcast = 0;
   bot.on("move", () => {
     const now = Date.now();
-    if (now - lastMoveBroadcast < 150) return;
+    if (now - lastMoveBroadcast < MOVE_THROTTLE_MS) return;
     lastMoveBroadcast = now;
     const pos = bot.entity?.position;
     if (!pos || isNaN(pos.x)) return;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
-import BotTerminal from "@/components/BotTerminal";
+import ChatPanel from "@/components/ChatPanel";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
 import type { Position } from "@/types/bot";
 
@@ -32,7 +32,7 @@ export default function HomePage() {
     >
       <Header position={position} connected={ws.connected} />
       <div className="flex min-h-0 flex-1 flex-col">
-        <BotTerminal ws={ws} actions={ws.actions} />
+        <ChatPanel ws={ws} actions={ws.actions} />
       </div>
     </div>
   );
