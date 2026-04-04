@@ -6,6 +6,11 @@ import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSo
 import { useMessageHistory } from "@/hooks/useMessageHistory";
 import { sanitizeText, stripMinecraftFormatting, formatMsgTime } from "@/lib/sanitize";
 
+/** Minecraft §コードを除去したうえで ANSI エスケープもサニタイズする */
+function sanitizeChatText(text: string): string {
+  return sanitizeText(stripMinecraftFormatting(text));
+}
+
 interface Props {
   ws: Pick<BotWebSocketState, "onMessage" | "connected">;
   actions: BotWebSocketActions;
@@ -61,7 +66,7 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
           <span className="msg-time">{formatMsgTime(entry.time)}</span>
         )}
       </div>
-      <span className="msg-body">{sanitizeText(stripMinecraftFormatting(entry.text))}</span>
+      <span className="msg-body">{sanitizeChatText(entry.text)}</span>
     </div>
   );
 }
