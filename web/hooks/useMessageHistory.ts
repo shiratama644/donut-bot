@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const HISTORY_KEY = "donut-bot-cmd-history";
-/** 保存するコマンド履歴の最大件数 */
-const MAX_COMMAND_HISTORY_SIZE = 30;
+const HISTORY_KEY = "donut-bot-msg-history";
+/** 保存するメッセージ履歴の最大件数 */
+const MAX_MESSAGE_HISTORY_SIZE = 30;
 
-export function useCommandHistory() {
+export function useMessageHistory() {
   const [history, setHistory] = useState<string[]>([]);
 
   useEffect(() => {
@@ -23,9 +23,9 @@ export function useCommandHistory() {
     }
   }, []);
 
-  const add = useCallback((cmd: string) => {
+  const add = useCallback((msg: string) => {
     setHistory((prev) => {
-      const next = [cmd, ...prev.filter((c) => c !== cmd)].slice(0, MAX_COMMAND_HISTORY_SIZE);
+      const next = [msg, ...prev.filter((m) => m !== msg)].slice(0, MAX_MESSAGE_HISTORY_SIZE);
       try {
         localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
       } catch {

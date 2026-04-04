@@ -2,7 +2,7 @@
  * 安全でないエスケープシーケンスを除去（OSC, DCS, PM, APC, SOS, CSI等すべて）
  * 受信データは生テキストであることが期待されるため、エスケープシーケンスはすべて除去する
  */
-export function sanitizeForTerminal(text: string): string {
+export function sanitizeText(text: string): string {
   return text
     // OSC シーケンス: ESC ] ... ST or BEL
     .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
@@ -22,8 +22,8 @@ const TIMESTAMP_MIN_LENGTH = 19;
  * `isoTime` は "YYYY-MM-DD HH:MM:SS" 形式（19文字以上）を想定する
  */
 export function formatMsgTime(isoTime: string): string {
-  if (isoTime.length < TIMESTAMP_MIN_LENGTH) return sanitizeForTerminal(isoTime);
-  return sanitizeForTerminal(isoTime.slice(11, 19));
+  if (isoTime.length < TIMESTAMP_MIN_LENGTH) return sanitizeText(isoTime);
+  return sanitizeText(isoTime.slice(11, 19));
 }
 
 /**

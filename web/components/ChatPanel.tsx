@@ -10,8 +10,8 @@ import {
 } from "@chatscope/chat-ui-kit-react";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
-import { useCommandHistory } from "@/hooks/useCommandHistory";
-import { sanitizeForTerminal, formatMsgTime, applyCompletion } from "@/lib/terminal";
+import { useMessageHistory } from "@/hooks/useMessageHistory";
+import { sanitizeText, formatMsgTime, applyCompletion } from "@/lib/sanitize";
 
 interface Props {
   ws: Pick<BotWebSocketState, "onMessage" | "connected">;
@@ -72,7 +72,7 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
           >
             {s.label}
           </span>
-          <span style={{ wordBreak: "break-word" }}>{sanitizeForTerminal(entry.line)}</span>
+          <span style={{ wordBreak: "break-word" }}>{sanitizeText(entry.line)}</span>
         </Message.CustomContent>
       </Message>
     );
@@ -106,7 +106,7 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
         >
           {isChat ? "CHAT" : "BAR"}
         </span>
-        <span style={{ wordBreak: "break-word" }}>{sanitizeForTerminal(entry.text)}</span>
+        <span style={{ wordBreak: "break-word" }}>{sanitizeText(entry.text)}</span>
       </Message.CustomContent>
     </Message>
   );
@@ -115,11 +115,11 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
 // ─── メインコンポーネント ─────────────────────────────────
 type SuggestionMode = "history" | "tabcomplete";
 
-export default function BotTerminal({ ws, actions }: Props) {
+export default function ChatPanel({ ws, actions }: Props) {
   const [entries, setEntries] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { history, add: addToHistory } = useCommandHistory();
+  const { history, add: addToHistory } = useMessageHistory();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionMode, setSuggestionMode] = useState<SuggestionMode>("history");
   const isOpen = suggestions.length > 0;
@@ -171,7 +171,7 @@ export default function BotTerminal({ ws, actions }: Props) {
       }
       const lower = value.toLowerCase();
       const matches = history
-        .filter((cmd) => cmd !== value && cmd.toLowerCase().startsWith(lower))
+        .filter((msg) => msg !== value && msg.toLowerCase().startsWith(lower))
         .slice(0, MAX_HISTORY_SUGGESTIONS);
       setSuggestions(matches);
       setSuggestionMode("history");
