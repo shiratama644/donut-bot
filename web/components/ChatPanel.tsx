@@ -148,7 +148,18 @@ export default function ChatPanel({ ws, actions }: Props) {
               <span className="msg-separator-inner">{entry.text}</span>
             </div>
           ) : (
-            <div key={entry.id} className="msg-entry">
+            <div
+              key={entry.id}
+              className={`msg-entry${
+                entry.type === "log" && entry.level === "send"
+                  ? " msg-entry--sent"
+                  : entry.type === "chat"
+                  ? " msg-entry--chat"
+                  : entry.type === "actionbar"
+                  ? " msg-entry--actionbar"
+                  : ""
+              }`}
+            >
               <MessageRow entry={entry} />
             </div>
           ),

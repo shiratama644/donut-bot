@@ -257,6 +257,39 @@ body {
   background: rgba(124, 106, 247, 0.04);
 }
 
+/* 送信メッセージ (sent) */
+.msg-entry--sent {
+  border-left: 3px solid var(--c-purple);
+  padding-left: 17px;
+  background: rgba(188, 140, 255, 0.06);
+}
+
+.msg-entry--sent:hover {
+  background: rgba(188, 140, 255, 0.1);
+}
+
+/* サーバーチャット (chat) */
+.msg-entry--chat {
+  border-left: 3px solid var(--c-cyan);
+  padding-left: 17px;
+  background: rgba(88, 166, 255, 0.06);
+}
+
+.msg-entry--chat:hover {
+  background: rgba(88, 166, 255, 0.1);
+}
+
+/* アクションバー (actionbar) */
+.msg-entry--actionbar {
+  border-left: 3px solid var(--c-yellow);
+  padding-left: 17px;
+  background: rgba(210, 153, 34, 0.06);
+}
+
+.msg-entry--actionbar:hover {
+  background: rgba(210, 153, 34, 0.1);
+}
+
 /* ─── System Badge ────────────────────────────────────── */
 
 .msg-separator {
@@ -443,4 +476,67 @@ input::-webkit-credentials-auto-fill-button {
   visibility: hidden;
   pointer-events: none;
   position: absolute;
+}
+
+/* ─── Mobile Responsive ───────────────────────────────── */
+
+@media (max-width: 540px) {
+  /* Header: tighten padding and hide less critical items */
+  .app-header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .app-header__subtitle {
+    display: none;
+  }
+
+  /* Hide position coordinates on small screens */
+  .app-header__pos {
+    display: none;
+  }
+
+  /* Compact status badge: show dot only */
+  .app-header__status-badge {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  /* Messages: reduce horizontal padding */
+  .msg-entry {
+    padding: 3px 12px;
+  }
+
+  .msg-entry--sent,
+  .msg-entry--chat,
+  .msg-entry--actionbar {
+    padding-left: 9px;
+  }
+
+  .msg-separator {
+    margin: 10px 12px;
+  }
+
+  /* Input area: reduce padding, account for iOS safe area */
+  .chat-input-area {
+    padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  /* Slightly smaller send button label on narrow screens */
+  .chat-send-btn {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-header__logo {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .app-header__title {
+    font-size: 13px;
+  }
 }
