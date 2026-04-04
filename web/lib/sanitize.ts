@@ -26,17 +26,3 @@ export function formatMsgTime(isoTime: string): string {
   return sanitizeText(isoTime.slice(11, 19));
 }
 
-/**
- * タブ補完の選択時にカーソル位置にマッチを適用する
- * 入力の最後のスペース以降をマッチで置き換え、先頭の "/" を保持する
- */
-export function applyCompletion(currentInput: string, match: string): string {
-  const lastSpace = currentInput.lastIndexOf(" ");
-  if (lastSpace === -1) {
-    // スペースなし: "/gam" → match="gamemode" → "/gamemode"
-    const prefix = currentInput.startsWith("/") && !match.startsWith("/") ? "/" : "";
-    return prefix + match;
-  }
-  // スペースあり: "/msg pla" → match="player1" → "/msg player1"
-  return currentInput.slice(0, lastSpace + 1) + match;
-}
