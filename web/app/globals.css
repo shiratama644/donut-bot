@@ -1,186 +1,469 @@
-@import url("https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap");
 @import "tailwindcss";
 
+/* ─── Theme Variables ─────────────────────────────────── */
+
 :root {
-  --color-bg: #0d0d0d;
-  --color-panel: #141414;
-  --color-border: #2a2a2a;
-  --color-green: #39ff14;
-  --color-yellow: #f0c040;
-  --color-red: #ff4444;
-  --color-dim: #555;
-  --color-text: #d4d4d4;
-  --color-btn: #1e1e1e;
-  --color-btn-active: #2f2f1a;
-  --color-btn-border: #404040;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  --transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+[data-theme="dark"] {
+  --bg-app: #1e1f22;
+  --bg-primary: #313338;
+  --bg-secondary: #2b2d31;
+  --bg-hover: rgba(79, 84, 92, 0.16);
+  --bg-input: #383a40;
+  --text-primary: #f2f3f5;
+  --text-secondary: #b5bac1;
+  --text-muted: #80848e;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #5865f2;
+  --status-green: #23a55a;
+  --status-green-glow: rgba(35, 165, 90, 0.45);
+  --c-green: #3ba55c;
+  --c-yellow: #faa61a;
+  --c-red: #ed4245;
+  --c-purple: #c375f0;
+  --c-cyan: #00aff4;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+  --bg-app: #e3e5e8;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f3f5;
+  --bg-hover: rgba(116, 127, 141, 0.08);
+  --bg-input: #ebedef;
+  --text-primary: #060607;
+  --text-secondary: #4e5058;
+  --text-muted: #80848e;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border: rgba(0, 0, 0, 0.12);
+  --accent: #5865f2;
+  --status-green: #23a55a;
+  --status-green-glow: rgba(35, 165, 90, 0.3);
+  --c-green: #2d7d46;
+  --c-yellow: #c27c0e;
+  --c-red: #c93333;
+  --c-purple: #9333c8;
+  --c-cyan: #0067e0;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ─── Base ────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
 body {
   height: 100%;
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: "Share Tech Mono", monospace;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  transition: var(--transition);
 }
 
-/* Chrome/Safari のオートフィルアイコン（鍵・カード・ピン等）を非表示にする */
-input::-webkit-contacts-auto-fill-button,
-input::-webkit-credentials-auto-fill-button {
-  visibility: hidden;
-  pointer-events: none;
-  position: absolute;
+/* ─── Scrollbar ──────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-input);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
-/* ─── chatscope ダークテーマ上書き ─── */
+/* ─── App Layout ─────────────────────────────────────── */
 
-/* MainContainer */
-.cs-main-container,
-.donut-main {
+.app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  transition: var(--transition);
+}
+
+/* ─── Discord-style Header ───────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 48px;
+  min-height: 48px;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 0 var(--border-subtle);
+  flex-shrink: 0;
+  z-index: 10;
+  transition: var(--transition);
+}
+
+.app-header__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.app-header__channel {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.app-header__channel::before {
+  content: "# ";
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.app-header__divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border);
+  flex-shrink: 0;
+}
+
+.app-header__spacer {
+  flex: 1;
+}
+
+.app-header__pos {
+  display: flex;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.app-header__pos span {
+  background-color: var(--bg-secondary);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.app-header__theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 17px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.app-header__theme-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.app-header__status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.app-header__status--online {
+  background-color: var(--status-green);
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 6px var(--status-green-glow);
+}
+
+.app-header__status--offline {
+  background-color: var(--text-muted);
+  box-shadow: none;
+}
+
+/* ─── chatscope MainContainer & ChatContainer ────────── */
+
+.cs-main-container {
   border: none !important;
-  background-color: var(--color-bg) !important;
-  color: var(--color-text) !important;
-  font-family: "Share Tech Mono", monospace !important;
-  font-size: 13px !important;
-}
-
-/* ChatContainer */
-.cs-chat-container {
-  background-color: var(--color-panel) !important;
-  color: var(--color-text) !important;
-  min-width: 0 !important;
-}
-
-/* MessageList */
-.cs-message-list {
-  background-color: var(--color-panel) !important;
-  color: var(--color-text) !important;
-  /* flex で伸縮できるように height:100% を上書き */
+  background-color: transparent !important;
   flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
 }
 
-/* メッセージバブル — 背景・影・ボーダーを除去してフラットなリスト表示に */
+.cs-chat-container {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  transition: var(--transition) !important;
+}
+
+/* ─── MessageList ────────────────────────────────────── */
+
+.cs-message-list {
+  background-color: var(--bg-primary) !important;
+  padding: 16px 0 8px !important;
+  transition: var(--transition) !important;
+}
+
+/* ─── Messages ───────────────────────────────────────── */
+
 .cs-message {
-  background-color: transparent !important;
-  border-radius: 0 !important;
   margin: 0 !important;
-  padding: 0 !important;
-}
-.cs-message:only-child,
-.cs-message:not(:only-child) {
-  margin: 0 !important;
-}
-.cs-message__content {
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--color-text) !important;
-  font-family: "Share Tech Mono", monospace !important;
-  font-size: 13px !important;
-  line-height: 1.6 !important;
-  padding: 2px 0 !important;
+  padding: 2px 16px !important;
+  background: transparent !important;
   border-radius: 0 !important;
 }
+
+.cs-message:hover {
+  background-color: var(--bg-hover) !important;
+}
+
 .cs-message__content-wrapper {
   max-width: 100% !important;
   width: 100% !important;
 }
 
-/* MessageSeparator */
+.cs-message__content {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 15px !important;
+  line-height: 1.375 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  transition: var(--transition) !important;
+}
+
+/* ─── MessageSeparator ───────────────────────────────── */
+
 .cs-message-separator {
   background-color: transparent !important;
-  color: var(--color-dim) !important;
-  font-family: "Share Tech Mono", monospace !important;
-  font-size: 0.75rem !important;
-  margin: 6px 0 !important;
+  color: var(--text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  margin: 8px 0 !important;
 }
+
 .cs-message-separator::before,
 .cs-message-separator::after {
-  background-color: var(--color-border) !important;
+  background-color: var(--border) !important;
 }
 
-/* カスタム入力エリア（cs-message-input クラスを流用） */
-.donut-input-area {
-  padding: 0 !important;
-  background-color: var(--color-panel) !important;
-  border-top: 1px solid var(--color-border) !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-bottom: none !important;
-  flex-shrink: 0 !important;
+/* ─── MessageInput (chatscope) ───────────────────────── */
+
+.cs-message-input {
+  background-color: var(--bg-primary) !important;
+  border-top: none !important;
+  padding: 0 16px 16px !important;
+  transition: var(--transition) !important;
 }
 
-/* サジェストリスト */
+.cs-message-input__content-editor-wrapper {
+  background-color: var(--bg-input) !important;
+  border-radius: 8px !important;
+  border: none !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.cs-message-input__content-editor-container {
+  padding: 0 16px !important;
+}
+
+.cs-message-input__content-editor {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 15px !important;
+  padding: 11px 0 !important;
+  min-height: 22px !important;
+  max-height: 40vh !important;
+  overflow-y: auto !important;
+  caret-color: var(--text-primary) !important;
+}
+
+.cs-message-input__content-editor[data-placeholder]::before {
+  color: var(--text-muted) !important;
+}
+
+/* Send button */
+.cs-button--send {
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+  transition: color 0.15s ease !important;
+  padding: 8px !important;
+}
+
+.cs-button--send:hover {
+  color: var(--accent) !important;
+}
+
+.cs-button--send svg {
+  fill: currentColor !important;
+}
+
+/* Attach button */
+.cs-button--attachment {
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+
+/* ─── Discord-style message rows ─────────────────────── */
+
+.msg-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 1px 0;
+}
+
+.msg-level {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  line-height: 1.6;
+}
+
+.msg-level--info {
+  background: rgba(59, 165, 92, 0.15);
+  color: var(--c-green);
+}
+.msg-level--warn {
+  background: rgba(250, 166, 26, 0.15);
+  color: var(--c-yellow);
+}
+.msg-level--error {
+  background: rgba(237, 66, 69, 0.15);
+  color: var(--c-red);
+}
+.msg-level--send {
+  background: rgba(195, 117, 240, 0.15);
+  color: var(--c-purple);
+}
+
+.msg-log-text {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.msg-chat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 1px 0;
+}
+
+.msg-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.msg-sender {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.msg-chat .msg-sender {
+  color: var(--c-cyan);
+}
+
+.msg-actionbar .msg-sender {
+  color: var(--c-yellow);
+}
+
+.msg-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.msg-body {
+  font-size: 15px;
+  color: var(--text-primary);
+  word-break: break-word;
+  line-height: 1.375;
+}
+
+/* ─── Suggestions overlay ────────────────────────────── */
+
 .donut-suggestions {
   list-style: none;
   margin: 0;
   padding: 4px 0;
-  max-height: 160px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
   overflow-y: auto;
-  border-bottom: 1px solid var(--color-border);
+  max-height: 180px;
+  position: absolute;
+  bottom: 72px;
+  left: 16px;
+  right: 16px;
+  z-index: 100;
 }
+
 .donut-suggestions li button {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 8px 16px;
+  padding: 8px 14px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-family: "Share Tech Mono", monospace;
-  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
   cursor: pointer;
+  transition: background-color 0.1s ease;
 }
-.donut-suggestions li:last-child button {
-  border-bottom: none;
-}
+
+.donut-suggestions li button:hover,
 .donut-suggestions li button:active {
-  background-color: var(--color-btn-active);
+  background-color: var(--bg-hover);
 }
 
-/* 入力バー */
-.donut-input-row {
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  align-items: center;
-}
+/* ─── Misc ───────────────────────────────────────────── */
 
-.donut-input {
-  flex: 1;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 10px 14px;
-  font-family: "Share Tech Mono", monospace;
-  font-size: 0.875rem;
-  color: var(--color-text);
-  outline: none;
-  min-width: 0;
-}
-.donut-input::placeholder {
-  opacity: 0.4;
-}
-.donut-input:focus {
-  border-color: var(--color-dim);
-}
-
-.donut-send-btn {
-  flex-shrink: 0;
-  background-color: var(--color-green);
-  color: #0d0d0d;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-family: "VT323", monospace;
-  font-size: 1.25rem;
-  font-weight: bold;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.donut-send-btn:active {
-  opacity: 0.8;
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
 }
