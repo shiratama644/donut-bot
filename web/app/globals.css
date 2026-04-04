@@ -444,3 +444,60 @@ input::-webkit-credentials-auto-fill-button {
   pointer-events: none;
   position: absolute;
 }
+
+/* ─── Mobile Responsive ───────────────────────────────── */
+
+@media (max-width: 540px) {
+  /* Header: tighten padding and hide less critical items */
+  .app-header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .app-header__subtitle {
+    display: none;
+  }
+
+  /* Hide position coordinates on small screens */
+  .app-header__pos {
+    display: none;
+  }
+
+  /* Compact status badge: show dot only */
+  .app-header__status-badge {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  /* Messages: reduce horizontal padding */
+  .msg-entry {
+    padding: 3px 12px;
+  }
+
+  .msg-separator {
+    margin: 10px 12px;
+  }
+
+  /* Input area: reduce padding, account for iOS safe area */
+  .chat-input-area {
+    padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  /* Slightly smaller send button label on narrow screens */
+  .chat-send-btn {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-header__logo {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .app-header__title {
+    font-size: 13px;
+  }
+}
