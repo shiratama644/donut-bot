@@ -203,137 +203,127 @@ body {
   box-shadow: none;
 }
 
-/* ─── chatscope MainContainer & ChatContainer ────────── */
+/* ─── Chat Panel Layout ──────────────────────────────── */
 
-.cs-main-container {
-  border: none !important;
-  background-color: transparent !important;
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background-color: var(--bg-primary);
+  transition: var(--transition);
 }
 
-.cs-chat-container {
-  background-color: var(--bg-primary) !important;
-  color: var(--text-primary) !important;
-  transition: var(--transition) !important;
+/* ─── Message List ───────────────────────────────────── */
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0 8px;
+  background-color: var(--bg-primary);
+  transition: var(--transition);
 }
 
-/* ─── MessageList ────────────────────────────────────── */
-
-.cs-message-list {
-  background-color: var(--bg-primary) !important;
-  padding: 16px 0 8px !important;
-  transition: var(--transition) !important;
+.msg-entry {
+  padding: 2px 16px;
 }
 
-/* ─── Messages ───────────────────────────────────────── */
-
-.cs-message {
-  margin: 0 !important;
-  padding: 2px 16px !important;
-  background: transparent !important;
-  border-radius: 0 !important;
+.msg-entry:hover {
+  background-color: var(--bg-hover);
 }
 
-.cs-message:hover {
-  background-color: var(--bg-hover) !important;
+/* ─── System separator ───────────────────────────────── */
+
+.msg-separator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.cs-message__content-wrapper {
-  max-width: 100% !important;
-  width: 100% !important;
+.msg-separator::before,
+.msg-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--border);
 }
 
-.cs-message__content {
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--text-primary) !important;
-  font-family: var(--font-sans) !important;
-  font-size: 15px !important;
-  line-height: 1.375 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  transition: var(--transition) !important;
+.msg-separator--ok {
+  color: var(--c-green);
 }
 
-/* ─── MessageSeparator ───────────────────────────────── */
-
-.cs-message-separator {
-  background-color: transparent !important;
-  color: var(--text-muted) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  margin: 8px 0 !important;
+.msg-separator--err {
+  color: var(--c-yellow);
 }
 
-.cs-message-separator::before,
-.cs-message-separator::after {
-  background-color: var(--border) !important;
+/* ─── Input Area ─────────────────────────────────────── */
+
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 16px;
+  background-color: var(--bg-primary);
+  flex-shrink: 0;
+  transition: var(--transition);
 }
 
-/* ─── MessageInput (chatscope) ───────────────────────── */
-
-.cs-message-input {
-  background-color: var(--bg-primary) !important;
-  border-top: none !important;
-  padding: 0 16px 16px !important;
-  transition: var(--transition) !important;
+.chat-input {
+  flex: 1;
+  background-color: var(--bg-input);
+  border: none;
+  border-radius: 8px;
+  padding: 11px 16px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.375;
+  outline: none;
+  caret-color: var(--text-primary);
+  transition: background-color 0.15s ease;
 }
 
-.cs-message-input__content-editor-wrapper {
-  background-color: var(--bg-input) !important;
-  border-radius: 8px !important;
-  border: none !important;
-  transition: background-color 0.15s ease !important;
+.chat-input::placeholder {
+  color: var(--text-muted);
 }
 
-.cs-message-input__content-editor-container {
-  padding: 0 16px !important;
+.chat-input:focus {
+  background-color: var(--bg-input);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
-.cs-message-input__content-editor {
-  background-color: transparent !important;
-  color: var(--text-primary) !important;
-  font-family: var(--font-sans) !important;
-  font-size: 15px !important;
-  padding: 11px 0 !important;
-  min-height: 22px !important;
-  max-height: 40vh !important;
-  overflow-y: auto !important;
-  caret-color: var(--text-primary) !important;
+.chat-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 18px;
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
 }
 
-.cs-message-input__content-editor[data-placeholder]::before {
-  color: var(--text-muted) !important;
+.chat-send-btn:hover {
+  opacity: 0.85;
 }
 
-/* Send button */
-.cs-button--send {
-  color: var(--text-secondary) !important;
-  background: transparent !important;
-  transition: color 0.15s ease !important;
-  padding: 8px !important;
+.chat-send-btn:active {
+  opacity: 0.7;
 }
 
-.cs-button--send:hover {
-  color: var(--accent) !important;
-}
-
-.cs-button--send svg {
-  fill: currentColor !important;
-}
-
-/* Attach button */
-.cs-button--attachment {
-  color: var(--text-secondary) !important;
-  background: transparent !important;
-}
-
-/* ─── Discord-style message rows ─────────────────────── */
+/* ─── Suggestions overlay ────────────────────────────── */
 
 .msg-row {
   display: flex;
@@ -428,16 +418,10 @@ body {
   margin: 0;
   padding: 4px 0;
   background-color: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-md);
+  border-top: 1px solid var(--border);
   overflow-y: auto;
   max-height: 180px;
-  position: absolute;
-  bottom: 72px;
-  left: 16px;
-  right: 16px;
-  z-index: 100;
+  flex-shrink: 0;
 }
 
 .donut-suggestions li button {
