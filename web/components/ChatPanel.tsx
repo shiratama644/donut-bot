@@ -7,6 +7,7 @@ import {
   MessageList,
   Message,
   MessageSeparator,
+  MessageInput,
 } from "@chatscope/chat-ui-kit-react";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
@@ -25,34 +26,29 @@ type ChatEntry =
   | { id: number; type: "sys"; text: string; ok: boolean };
 
 // ─── 定数 ────────────────────────────────────────────────
-/** タブ補完リクエストのデバウンス遅延 (ms) */
 const DEBOUNCE_TAB_COMPLETE_MS = 250;
-/** 履歴サジェストの最大表示件数 */
 const MAX_HISTORY_SUGGESTIONS = 8;
-/** タブ補完サジェストの最大表示件数 */
 const MAX_TAB_SUGGESTIONS = 10;
-/** メッセージの最大保持件数 */
 const MAX_ENTRIES = 500;
 
-/** ログレベルのラベルと色 */
-const LEVEL_STYLE: Record<string, { label: string; color: string }> = {
-  info:  { label: "INFO", color: "var(--color-green)" },
-  warn:  { label: "WARN", color: "var(--color-yellow)" },
-  error: { label: "ERR",  color: "var(--color-red)" },
-  send:  { label: "SEND", color: "#c678dd" },
+const LEVEL_STYLE: Record<string, { label: string; colorClass: string }> = {
+  info:  { label: "INFO", colorClass: "msg-level--info"  },
+  warn:  { label: "WARN", colorClass: "msg-level--warn"  },
+  error: { label: "ERR",  colorClass: "msg-level--error" },
+  send:  { label: "SEND", colorClass: "msg-level--send"  },
 };
 
-// コンポーネントのライフタイムを超えてユニーク ID を保持するカウンター
 let nextEntryId = 0;
 
-// ─── 個別メッセージ行 ─────────────────────────────────────
 type NonSysEntry = Exclude<ChatEntry, { type: "sys" }>;
+type SuggestionMode = "history" | "tabcomplete";
 
+// ─── 個別メッセージ行 ─────────────────────────────────────
 function MessageRow({ entry }: { entry: NonSysEntry }) {
   if (entry.type === "log") {
     const s = LEVEL_STYLE[entry.level] ?? {
       label: entry.level.toUpperCase().slice(0, 4),
-      color: "var(--color-text)",
+      colorClass: "",
     };
     return (
       <Message
@@ -60,19 +56,10 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
         avatarSpacer={false}
       >
         <Message.CustomContent>
-          <span
-            style={{
-              color: s.color,
-              fontWeight: "bold",
-              display: "inline-block",
-              minWidth: "2.6rem",
-              marginRight: "0.6rem",
-              letterSpacing: "0.04em",
-            }}
-          >
-            {s.label}
-          </span>
-          <span style={{ wordBreak: "break-word" }}>{sanitizeText(entry.line)}</span>
+          <div className="msg-row">
+            <span className={`msg-level ${s.colorClass}`}>{s.label}</span>
+            <span className="msg-log-text">{sanitizeText(entry.line)}</span>
+          </div>
         </Message.CustomContent>
       </Message>
     );
@@ -85,44 +72,31 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
       avatarSpacer={false}
     >
       <Message.CustomContent>
-        {entry.time && (
-          <span
-            style={{
-              color: "var(--color-dim)",
-              fontSize: "0.72rem",
-              marginRight: "0.5rem",
-            }}
-          >
-            {formatMsgTime(entry.time)}
-          </span>
-        )}
-        <span
-          style={{
-            color: isChat ? "#56b6c2" : "var(--color-yellow)",
-            fontWeight: "bold",
-            marginRight: "0.6rem",
-            letterSpacing: "0.04em",
-          }}
-        >
-          {isChat ? "CHAT" : "BAR"}
-        </span>
-        <span style={{ wordBreak: "break-word" }}>{sanitizeText(entry.text)}</span>
+        <div className={`msg-chat-row ${isChat ? "msg-chat" : "msg-actionbar"}`}>
+          <div className="msg-header">
+            <span className="msg-sender">
+              {isChat ? "💬 Minecraft Chat" : "🎯 Action Bar"}
+            </span>
+            {entry.time && (
+              <span className="msg-time">{formatMsgTime(entry.time)}</span>
+            )}
+          </div>
+          <span className="msg-body">{sanitizeText(entry.text)}</span>
+        </div>
       </Message.CustomContent>
     </Message>
   );
 }
 
 // ─── メインコンポーネント ─────────────────────────────────
-type SuggestionMode = "history" | "tabcomplete";
-
 export default function ChatPanel({ ws, actions }: Props) {
   const [entries, setEntries] = useState<ChatEntry[]>([]);
-  const [input, setInput] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputKey, setInputKey] = useState(0);
+  const [inputValue, setInputValue] = useState("");
+  const inputTextRef = useRef("");
   const { history, add: addToHistory } = useMessageHistory();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionMode, setSuggestionMode] = useState<SuggestionMode>("history");
-  const isOpen = suggestions.length > 0;
   const tabCompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { onMessage, connected } = ws;
 
@@ -179,17 +153,22 @@ export default function ChatPanel({ ws, actions }: Props) {
     [history],
   );
 
+  // MessageInput の onChange ハンドラ
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      setInput(val);
+    (
+      _innerHtml: string,
+      _textContent: string,
+      innerText: string,
+    ) => {
+      const val = innerText;
+      inputTextRef.current = val;
       if (tabCompleteTimer.current) clearTimeout(tabCompleteTimer.current);
 
       if (val.startsWith("/")) {
         setSuggestions([]);
         tabCompleteTimer.current = setTimeout(() => {
           actions.requestTabComplete(val).then((matches) => {
-            if (inputRef.current?.value === val) {
+            if (inputTextRef.current === val) {
               setSuggestions(matches.slice(0, MAX_TAB_SUGGESTIONS));
               setSuggestionMode("tabcomplete");
             }
@@ -202,52 +181,58 @@ export default function ChatPanel({ ws, actions }: Props) {
     [actions, updateHistorySuggestions],
   );
 
-  // サジェストをタップして入力欄に反映
+  // MessageInput の onSend ハンドラ（Enter キーまたは送信ボタン）
+  const handleSend = useCallback(
+    (
+      _innerHtml: string,
+      textContent: string,
+      innerText: string,
+    ) => {
+      const text = (innerText || textContent || inputTextRef.current).trim();
+      if (!text) return;
+      addToHistory(text);
+      actions.sendChat(text);
+      inputTextRef.current = "";
+      setInputValue("");
+      setInputKey((k) => k + 1);
+      setSuggestions([]);
+    },
+    [actions, addToHistory],
+  );
+
+  // サジェストを選択して入力欄に反映
   const selectSuggestion = useCallback(
     (suggestion: string) => {
       const newInput =
-        suggestionMode === "tabcomplete" ? applyCompletion(input, suggestion) : suggestion;
-      setInput(newInput);
+        suggestionMode === "tabcomplete"
+          ? applyCompletion(inputTextRef.current, suggestion)
+          : suggestion;
+      inputTextRef.current = newInput;
+      setInputValue(newInput);
+      setInputKey((k) => k + 1);
       setSuggestions([]);
-      inputRef.current?.focus();
     },
-    [input, suggestionMode],
-  );
-
-  const handleSend = useCallback(() => {
-    const text = input.trim();
-    if (!text) return;
-    addToHistory(text);
-    actions.sendChat(text);
-    setInput("");
-    setSuggestions([]);
-    inputRef.current?.focus();
-  }, [input, actions, addToHistory]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Escape") {
-        setSuggestions([]);
-        return;
-      }
-      if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-        handleSend();
-      }
-    },
-    [handleSend],
+    [suggestionMode],
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <MainContainer className="donut-main">
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <MainContainer style={{ flex: 1, minHeight: 0 }}>
         <ChatContainer>
-          {/* メッセージ一覧 — autoScrollToBottom で新着時に自動スクロール */}
           <MessageList autoScrollToBottom autoScrollToBottomOnMount scrollBehavior="auto">
             {entries.map((entry) =>
               entry.type === "sys" ? (
                 <MessageSeparator
                   key={entry.id}
-                  style={{ color: entry.ok ? "var(--color-green)" : "var(--color-yellow)" }}
+                  style={{ color: entry.ok ? "var(--c-green)" : "var(--c-yellow)" }}
                 >
                   {entry.text}
                 </MessageSeparator>
@@ -257,57 +242,36 @@ export default function ChatPanel({ ws, actions }: Props) {
             )}
           </MessageList>
 
-          {/* カスタム入力エリア — cs-message-input クラスで ChatContainer 下部に配置 */}
-          <div className="cs-message-input donut-input-area">
-            {/* タブ補完・履歴サジェスト（タップで選択） */}
-            {isOpen && (
-              <ul className="donut-suggestions" role="listbox" aria-label="入力候補">
-                {suggestions.map((item) => (
-                  <li key={item} role="option">
-                    <button
-                      type="button"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        selectSuggestion(item);
-                      }}
-                    >
-                      {item}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* 入力バー */}
-            <div className="donut-input-row">
-              <input
-                ref={inputRef}
-                type="text"
-                name="minecraft-command-input"
-                inputMode="text"
-                aria-label="メッセージを入力"
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="/say こんにちは"
-                autoComplete="new-password"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                enterKeyHint="send"
-                className="donut-input"
-              />
-              <button
-                type="button"
-                onClick={handleSend}
-                className="donut-send-btn"
-              >
-                SEND
-              </button>
-            </div>
-          </div>
+          <MessageInput
+            key={inputKey}
+            value={inputValue}
+            placeholder="メッセージを入力… (/ でコマンド補完、Enter で送信)"
+            attachButton={false}
+            sendButton={true}
+            onSend={handleSend}
+            onChange={handleInputChange}
+          />
         </ChatContainer>
       </MainContainer>
+
+      {/* タブ補完・履歴サジェスト */}
+      {suggestions.length > 0 && (
+        <ul className="donut-suggestions" role="listbox" aria-label="入力候補">
+          {suggestions.map((item) => (
+            <li key={item} role="option">
+              <button
+                type="button"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  selectSuggestion(item);
+                }}
+              >
+                {item}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

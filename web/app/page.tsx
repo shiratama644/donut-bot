@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
+import { useTheme } from "@/hooks/useTheme";
 import type { Position } from "@/types/bot";
 
 const WS_URL =
@@ -15,6 +16,7 @@ const WS_URL =
 export default function HomePage() {
   const ws = useBotWebSocket(WS_URL);
   const [position, setPosition] = useState<Position | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   const { onMessage } = ws;
   useEffect(() => {
@@ -26,14 +28,14 @@ export default function HomePage() {
   }, [onMessage]);
 
   return (
-    <div
-      className="flex h-full flex-col"
-      style={{ gap: 1, backgroundColor: "var(--color-border)" }}
-    >
-      <Header position={position} connected={ws.connected} />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <ChatPanel ws={ws} actions={ws.actions} />
-      </div>
+    <div className="app-root">
+      <Header
+        position={position}
+        connected={ws.connected}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+      <ChatPanel ws={ws} actions={ws.actions} />
     </div>
   );
 }
