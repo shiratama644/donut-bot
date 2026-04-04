@@ -1,14 +1,80 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
 import { useMessageHistory } from "@/hooks/useMessageHistory";
-import { sanitizeText, stripMinecraftFormatting, formatMsgTime } from "@/lib/sanitize";
+import { sanitizeText, formatMsgTime } from "@/lib/sanitize";
 
-/** Minecraft §コードを除去したうえで ANSI エスケープもサニタイズする */
-function sanitizeChatText(text: string): string {
-  return sanitizeText(stripMinecraftFormatting(text));
+/** Minecraft 標準カラーコード (§0–§f) → CSS hex */
+const MC_COLOR_HEX: Record<string, string> = {
+  "0": "#000000", "1": "#0000AA", "2": "#00AA00", "3": "#00AAAA",
+  "4": "#AA0000", "5": "#AA00AA", "6": "#FFAA00", "7": "#AAAAAA",
+  "8": "#555555", "9": "#5555FF", "a": "#55FF55", "b": "#55FFFF",
+  "c": "#FF5555", "d": "#FF55FF", "e": "#FFFF55", "f": "#FFFFFF",
+};
+
+interface McStyle {
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+}
+
+/**
+ * Minecraft §コード（§X / §#RRGGBB）をパースして色付き React ノードを返す。
+ * ANSI エスケープはあらかじめ sanitizeText() で除去しておくこと。
+ */
+function renderMinecraftText(raw: string): ReactNode {
+  const text = sanitizeText(raw);
+  const segments: { text: string; style: McStyle }[] = [];
+  let style: McStyle = {};
+  let buf = "";
+  const re = /§(#[0-9a-f]{6}|[0-9a-fk-or])/gi;
+  let last = 0;
+
+  for (const m of text.matchAll(re)) {
+    buf += text.slice(last, m.index);
+    last = m.index + m[0].length;
+
+    if (buf) { segments.push({ text: buf, style: { ...style } }); buf = ""; }
+
+    const code = m[1].toLowerCase();
+    if (code === "r") {
+      style = {};
+    } else if (code.startsWith("#")) {
+      style = { ...style, color: code };
+    } else if (MC_COLOR_HEX[code]) {
+      style = { ...style, color: MC_COLOR_HEX[code] };
+    } else if (code === "l") {
+      style = { ...style, bold: true };
+    } else if (code === "o") {
+      style = { ...style, italic: true };
+    } else if (code === "n") {
+      style = { ...style, underline: true };
+    } else if (code === "m") {
+      style = { ...style, strikethrough: true };
+    }
+    // §k (obfuscated) – スキップ
+  }
+
+  buf += text.slice(last);
+  if (buf) segments.push({ text: buf, style: { ...style } });
+
+  return segments.map((seg, i) => {
+    const css: CSSProperties = {};
+    if (seg.style.color)         css.color          = seg.style.color;
+    if (seg.style.bold)          css.fontWeight     = "bold";
+    if (seg.style.italic)        css.fontStyle      = "italic";
+    const deco: string[] = [];
+    if (seg.style.underline)     deco.push("underline");
+    if (seg.style.strikethrough) deco.push("line-through");
+    if (deco.length > 0)         css.textDecoration = deco.join(" ");
+    return Object.keys(css).length > 0
+      ? <span key={i} style={css}>{seg.text}</span>
+      : seg.text;
+  });
 }
 
 interface Props {
@@ -66,7 +132,7 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
           <span className="msg-time">{formatMsgTime(entry.time)}</span>
         )}
       </div>
-      <span className="msg-body">{sanitizeChatText(entry.text)}</span>
+      <span className="msg-body">{renderMinecraftText(entry.text)}</span>
     </div>
   );
 }
