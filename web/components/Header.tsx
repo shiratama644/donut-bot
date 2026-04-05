@@ -9,9 +9,10 @@ interface Props {
   theme: Theme;
   onToggleTheme: () => void;
   onOpenStatus: () => void;
+  onOpenSettings: () => void;
 }
 
-export default function Header({ position, connected, theme, onToggleTheme, onOpenStatus }: Props) {
+export default function Header({ position, connected, theme, onToggleTheme, onOpenStatus, onOpenSettings }: Props) {
   const fmt = (n: number) => n.toFixed(1);
 
   return (
@@ -28,6 +29,7 @@ export default function Header({ position, connected, theme, onToggleTheme, onOp
 
       {position && (
         <div className="app-header__pos" aria-label="ボット座標">
+          <span className="material-symbols-outlined app-header__pos-icon">location_on</span>
           <span className="app-header__pos-label">X</span>
           {fmt(position.x)}
           <span className="app-header__pos-sep">·</span>
@@ -56,24 +58,34 @@ export default function Header({ position, connected, theme, onToggleTheme, onOp
 
       <button
         type="button"
-        className="app-header__theme-btn"
+        className="app-header__icon-btn"
         onClick={onToggleTheme}
         aria-label={theme === "dark" ? "ライトテーマに切り替え" : "ダークテーマに切り替え"}
         title={theme === "dark" ? "ライトテーマに切り替え" : "ダークテーマに切り替え"}
       >
-        {theme === "dark" ? "☀️" : "🌙"}
+        <span className="material-symbols-outlined">
+          {theme === "dark" ? "light_mode" : "dark_mode"}
+        </span>
       </button>
 
       <button
         type="button"
-        className="app-header__menu-btn"
+        className="app-header__icon-btn"
+        onClick={onOpenSettings}
+        aria-label="設定を開く"
+        title="設定"
+      >
+        <span className="material-symbols-outlined">settings</span>
+      </button>
+
+      <button
+        type="button"
+        className="app-header__icon-btn"
         onClick={onOpenStatus}
         aria-label="ステータスメニューを開く"
         title="Bot Status"
       >
-        <span className="app-header__menu-icon" aria-hidden="true" />
-        <span className="app-header__menu-icon" aria-hidden="true" />
-        <span className="app-header__menu-icon" aria-hidden="true" />
+        <span className="material-symbols-outlined">monitor_heart</span>
       </button>
     </header>
   );

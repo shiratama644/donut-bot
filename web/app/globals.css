@@ -231,6 +231,38 @@ body {
   background: var(--bg-input);
 }
 
+/* ─── Header Icon Button (theme / settings / status) ──── */
+
+.app-header__icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+}
+
+.app-header__icon-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.app-header__icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-input);
+}
+
+.app-header__pos-icon {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
 /* ─── Chat Panel ──────────────────────────────────────── */
 
 .chat-panel {
@@ -470,42 +502,6 @@ body {
   transform: none;
 }
 
-/* ─── Hamburger Menu Button ───────────────────────────── */
-
-.app-header__menu-btn {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 5px;
-  width: 36px;
-  height: 36px;
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background var(--transition), border-color var(--transition);
-  padding: 0;
-}
-
-.app-header__menu-btn:hover {
-  background: var(--border);
-}
-
-.app-header__menu-icon {
-  display: block;
-  width: 16px;
-  height: 2px;
-  background: var(--text-secondary);
-  border-radius: 2px;
-  transition: background var(--transition);
-}
-
-.app-header__menu-btn:hover .app-header__menu-icon {
-  background: var(--text-primary);
-}
-
 /* ─── Status Panel (Drawer) ───────────────────────────── */
 
 .status-panel__overlay {
@@ -636,11 +632,199 @@ body {
   transition: width 0.4s ease;
 }
 
+.status-panel__bar-fill--sat {
+  background: var(--c-yellow);
+}
+
+.status-panel__bar-fill--xp {
+  background: var(--c-green);
+}
+
+.status-panel__row-icon {
+  font-size: 14px;
+  vertical-align: middle;
+  margin-right: 4px;
+  color: var(--text-muted);
+}
+
+.status-panel__coords {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.status-panel__coords-icon {
+  font-size: 18px;
+  color: var(--c-cyan);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.status-panel__coords-grid {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.status-panel__coords-label {
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.8;
+}
+
+.status-panel__coords-val {
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.8;
+}
+
+.status-panel__empty-inline {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+
 .status-panel__empty {
   font-size: 13px;
   color: var(--text-muted);
   text-align: center;
   padding: 24px 0;
+}
+
+/* ─── Settings Panel ──────────────────────────────────── */
+
+.settings-panel__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 99;
+}
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 300px;
+  max-width: 90vw;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+.settings-panel--open {
+  transform: translateX(0);
+}
+
+.settings-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  height: 58px;
+  min-height: 58px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.settings-panel__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-panel__title-icon {
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.settings-panel__close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.settings-panel__close-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.settings-panel__close-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-2);
+}
+
+.settings-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-panel__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.settings-panel__slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-panel__slider {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 4px;
+}
+
+.settings-panel__slider-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 64px;
+  text-align: right;
+}
+
+.settings-panel__slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 2px;
 }
 
 

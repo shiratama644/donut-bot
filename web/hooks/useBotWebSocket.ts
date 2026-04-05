@@ -7,6 +7,7 @@ const RECONNECT_DELAY_MS = 3000;
 
 export interface BotWebSocketActions {
   sendChat: (text: string) => void;
+  sendSetInterval: (ms: number) => void;
 }
 
 export interface BotWebSocketState {
@@ -78,14 +79,18 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "chat", text });
   }, [send]);
 
+  const sendSetInterval = useCallback((ms: number) => {
+    send({ type: "setStatusInterval", ms });
+  }, [send]);
+
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
     handlersRef.current.add(handler);
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
   const actions = useMemo(
-    () => ({ sendChat }),
-    [sendChat],
+    () => ({ sendChat, sendSetInterval }),
+    [sendChat, sendSetInterval],
   );
 
   return { connected, actions, onMessage };

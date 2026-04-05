@@ -4,6 +4,7 @@ import { Bot } from "mineflayer";
 import { WEB_PORT } from "./config.js";
 import { log, emit, ts } from "./logger.js";
 import { broadcast, setWss } from "./broadcast.js";
+import { setStatusIntervalMs } from "./status.js";
 
 // ─── WebSocket サーバー ───────────────────────────────────
 export function startWebSocketServer(bot: Bot): void {
@@ -47,6 +48,11 @@ function handleClientMessage(bot: Bot, ws: WebSocket, msg: Record<string, unknow
     bot.chat(text);
     emit("send", `[SEND/WEB] ${text}`);
     broadcast({ type: "sent", text, time: ts() });
+    return;
+  }
+
+  if (msg.type === "setStatusInterval" && typeof msg.ms === "number") {
+    setStatusIntervalMs(msg.ms);
     return;
   }
 
