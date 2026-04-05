@@ -22,7 +22,7 @@ export interface BotWebSocketState {
 export function useBotWebSocket(url: string): BotWebSocketState {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
-  const [botConnected, setBotConnected] = useState(true);
+  const [botConnected, setBotConnected] = useState(false);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
