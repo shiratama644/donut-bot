@@ -165,6 +165,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "removeAccount", username });
   }, [send]);
 
+  /** MCID 不一致で自動再認証が失敗した際に、手動再認証を開始する。 */
   const sendReauthAccount = useCallback((username: string) => {
     send({ type: "reauthAccount", username });
   }, [send]);

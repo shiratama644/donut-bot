@@ -1,4 +1,5 @@
 import http from "http";
+import { randomUUID } from "crypto";
 import { WebSocketServer, WebSocket } from "ws";
 import { Bot } from "mineflayer";
 import { WEB_PORT } from "./config.js";
@@ -416,7 +417,7 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     clearAccountProfileCache(username);
     log.info(`再認証のためトークンキャッシュをクリアしました — ユーザー名: ${username}`);
     const current = getAuthState();
-    beginAuthLifecycle(username, current.sessionId ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    beginAuthLifecycle(username, current.sessionId ?? randomUUID());
     log.event("info", "auth.reauth.manual", { username, sessionId: getAuthState().sessionId });
 
     saveCredentials(savedCreds);

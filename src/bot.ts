@@ -1,4 +1,5 @@
 import mineflayer, { Bot } from "mineflayer";
+import { randomUUID } from "crypto";
 import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
@@ -20,7 +21,7 @@ import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccoun
 import { getAuthState, setAuthState } from "./authState.js";
 
 function createSessionId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return randomUUID();
 }
 
 function resolveAuthSession(username: string): string {

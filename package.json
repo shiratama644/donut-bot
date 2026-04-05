@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "pnpm build && node --test dist/**/*.test.js",
+    "test": "node --test dist/**/*.test.js",
+    "test:ci": "pnpm build && pnpm test",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "dev:all": "concurrently --names \"web,bot\" --prefix-colors \"cyan,yellow\" \"pnpm --filter donutsmp-bot-web dev\" \"pnpm dev\"",
