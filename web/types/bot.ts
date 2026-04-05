@@ -56,7 +56,12 @@ export interface CredentialsInfoMessage {
   username: string | null;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | CredentialsInfoMessage;
+export interface AccountsListMessage {
+  type: "accountsList";
+  usernames: string[];
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | CredentialsInfoMessage | AccountsListMessage;
 
 export interface Position {
   x: number;

@@ -10,7 +10,10 @@ export interface BotWebSocketActions {
   sendSetInterval: (ms: number) => void;
   sendDisconnect: () => void;
   sendReconnect: () => void;
-  sendSetCredentials: (username: string, password: string) => void;
+  sendSetCredentials: (username: string) => void;
+  sendLogout: () => void;
+  sendSwitchAccount: (username: string) => void;
+  sendRemoveAccount: (username: string) => void;
 }
 
 export interface BotWebSocketState {
@@ -19,6 +22,7 @@ export interface BotWebSocketState {
   /** null = サーバーからの応答待ち */
   hasCredentials: boolean | null;
   currentUsername: string | null;
+  accounts: string[];
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -29,6 +33,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [botConnected, setBotConnected] = useState(false);
   const [hasCredentials, setHasCredentials] = useState<boolean | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<string[]>([]);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -71,6 +76,10 @@ export function useBotWebSocket(url: string): BotWebSocketState {
           setCurrentUsername(msg.username);
           return;
         }
+        if (msg.type === "accountsList") {
+          setAccounts(msg.usernames);
+          return;
+        }
         handlersRef.current.forEach((h) => h(msg));
       } catch {
         // 無効なJSON無視
@@ -111,8 +120,20 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "reconnect" });
   }, [send]);
 
-  const sendSetCredentials = useCallback((username: string, password: string) => {
-    send({ type: "setCredentials", username, password });
+  const sendSetCredentials = useCallback((username: string) => {
+    send({ type: "setCredentials", username });
+  }, [send]);
+
+  const sendLogout = useCallback(() => {
+    send({ type: "logout" });
+  }, [send]);
+
+  const sendSwitchAccount = useCallback((username: string) => {
+    send({ type: "switchAccount", username });
+  }, [send]);
+
+  const sendRemoveAccount = useCallback((username: string) => {
+    send({ type: "removeAccount", username });
   }, [send]);
 
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
@@ -121,10 +142,10 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   }, []);
 
   const actions = useMemo(
-    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials }),
-    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials],
+    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount }),
+    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount],
   );
 
-  return { connected, botConnected, hasCredentials, currentUsername, actions, onMessage };
+  return { connected, botConnected, hasCredentials, currentUsername, accounts, actions, onMessage };
 }
 

@@ -54,7 +54,7 @@ export default function HomePage() {
   if (ws.hasCredentials === false) {
     return (
       <LoginPanel
-        onSubmit={(username, password) => ws.actions.sendSetCredentials(username, password)}
+        onSubmit={(username) => ws.actions.sendSetCredentials(username)}
       />
     );
   }
@@ -72,6 +72,11 @@ export default function HomePage() {
         onToggleTheme={toggleTheme}
         onOpenStatus={() => setStatusOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
+        currentUsername={ws.currentUsername}
+        accounts={ws.accounts}
+        onLogout={ws.actions.sendLogout}
+        onSwitchAccount={ws.actions.sendSwitchAccount}
+        onRemoveAccount={ws.actions.sendRemoveAccount}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
       <StatusPanel
@@ -86,7 +91,7 @@ export default function HomePage() {
         intervalMs={intervalMs}
         onIntervalChange={handleIntervalChange}
         currentUsername={ws.currentUsername}
-        onSetCredentials={(username, password) => ws.actions.sendSetCredentials(username, password)}
+        onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
       />
     </div>
   );

@@ -5,7 +5,8 @@ import { WEB_PORT } from "./config.js";
 import { log, emit, ts } from "./logger.js";
 import { broadcast, setWss } from "./broadcast.js";
 import { setStatusIntervalMs } from "./status.js";
-import { saveCredentials, getCredentials } from "./credentials.js";
+import { saveCredentials, getCredentials, clearCredentials } from "./credentials.js";
+import { getAccountUsernames, getAccountCredentials, removeAccount } from "./accounts.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -54,6 +55,12 @@ export function initWebSocketServer(): void {
       type: "credentialsInfo",
       hasCredentials: creds !== null,
       username: creds?.username ?? null,
+    }));
+
+    // 接続時に保存済みアカウント一覧を送る（ユーザー名のみ）
+    ws.send(JSON.stringify({
+      type: "accountsList",
+      usernames: getAccountUsernames(),
     }));
 
     // 接続時に現在の座標を送る
@@ -119,14 +126,14 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
   if (msg.type === "setCredentials") {
     const username = typeof msg.username === "string" ? msg.username.trim() : "";
-    const password = typeof msg.password === "string" ? msg.password : "";
     if (!username) return;
 
-    saveCredentials({ username, password: password || undefined });
+    saveCredentials({ username });
     log.info(`認証情報を更新しました — ユーザー名: ${username}`);
 
-    // 全クライアントに更新を通知（パスワードは送らない）
+    // 全クライアントに更新を通知
     broadcast({ type: "credentialsInfo", hasCredentials: true, username });
+    broadcast({ type: "accountsList", usernames: getAccountUsernames() });
 
     if (isBotConnected && botRef) {
       // 現在接続中 → 切断して再接続
@@ -139,6 +146,72 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     } else {
       // 未接続 → そのまま接続
       reconnectCallback?.();
+    }
+    return;
+  }
+
+  if (msg.type === "switchAccount") {
+    const username = typeof msg.username === "string" ? msg.username.trim() : "";
+    if (!username) return;
+
+    const savedCreds = getAccountCredentials(username);
+    if (!savedCreds) {
+      log.warn(`switchAccount: アカウントが見つかりません — ${username}`);
+      return;
+    }
+
+    saveCredentials(savedCreds);
+    log.info(`アカウントを切り替えました — ユーザー名: ${username}`);
+
+    broadcast({ type: "credentialsInfo", hasCredentials: true, username });
+
+    if (isBotConnected && botRef) {
+      pendingIntentionalDisconnect = true;
+      const currentBot = botRef;
+      currentBot.once("end", () => {
+        reconnectCallback?.();
+      });
+      currentBot.end("account switched");
+    } else {
+      reconnectCallback?.();
+    }
+    return;
+  }
+
+  if (msg.type === "removeAccount") {
+    const username = typeof msg.username === "string" ? msg.username.trim() : "";
+    if (!username) return;
+
+    removeAccount(username);
+    log.info(`アカウントを削除しました — ユーザー名: ${username}`);
+
+    broadcast({ type: "accountsList", usernames: getAccountUsernames() });
+
+    // 削除対象がアクティブアカウントの場合はログアウト
+    const creds = getCredentials();
+    if (creds?.username === username) {
+      clearCredentials();
+      broadcast({ type: "credentialsInfo", hasCredentials: false, username: null });
+      if (isBotConnected && botRef) {
+        pendingIntentionalDisconnect = true;
+        botRef.end("account removed");
+      }
+    }
+    return;
+  }
+
+  if (msg.type === "logout") {
+    // 認証情報を削除
+    clearCredentials();
+    log.info("ログアウトしました");
+
+    // 全クライアントに認証情報なしを通知
+    broadcast({ type: "credentialsInfo", hasCredentials: false, username: null });
+
+    // Botが接続中なら切断
+    if (isBotConnected && botRef) {
+      pendingIntentionalDisconnect = true;
+      botRef.end("logged out");
     }
     return;
   }
