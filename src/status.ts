@@ -49,6 +49,18 @@ export function setStatusIntervalMs(ms: number): void {
 
 // ─── Status ブロードキャスト ──────────────────────────────
 export function startStatusBroadcast(bot: Bot): () => void {
+  // 新しいBotセッションのためにキャッシュをリセット
+  cache = {
+    username: "",
+    health: 0,
+    food: 0,
+    foodSaturation: 0,
+    gameMode: "unknown",
+    experienceLevel: 0,
+    experiencePoints: 0,
+    experienceProgress: 0,
+    ping: 0,
+  };
   currentBot = bot;
   statusHandle = setInterval(() => broadcastStatus(bot), currentIntervalMs);
   return () => {
