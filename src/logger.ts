@@ -28,5 +28,7 @@ export function emit(level: LogLevel, line: string): void {
     case "error": console.error(line); break;
     default:      console.log(line);   break;
   }
-  broadcast({ type: "log", level, line });
+  if (level !== "send") {
+    broadcast({ type: "log", level, line });
+  }
 }
