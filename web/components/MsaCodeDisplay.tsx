@@ -16,12 +16,15 @@ interface Props {
 function isTrustedMicrosoftUrl(uri: string): boolean {
   try {
     const url = new URL(uri);
+    const hostname = url.hostname.toLowerCase();
     return (
       url.protocol === "https:" &&
-      (url.hostname === "microsoft.com" ||
-        url.hostname.endsWith(".microsoft.com") ||
-        url.hostname === "microsoftonline.com" ||
-        url.hostname.endsWith(".microsoftonline.com"))
+      (hostname === "microsoft.com" ||
+        hostname.endsWith(".microsoft.com") ||
+        hostname === "microsoftonline.com" ||
+        hostname.endsWith(".microsoftonline.com") ||
+        hostname === "login.live.com" ||
+        hostname.endsWith(".login.live.com"))
     );
   } catch {
     return false;

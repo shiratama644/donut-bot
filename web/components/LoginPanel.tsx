@@ -61,7 +61,7 @@ export default function LoginPanel({ onSubmit, msaCode }: Props) {
               {submitting ? (
                 <>
                   <span className="material-symbols-outlined login-card__spin">refresh</span>
-                  認証コード待機中…
+                  デバイスコード待機中…
                 </>
               ) : (
                 <>
