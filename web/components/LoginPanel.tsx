@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MsaCodeDisplay from "@/components/MsaCodeDisplay";
 
 interface Props {
   onSubmit: (username: string) => void;
@@ -26,22 +27,11 @@ export default function LoginPanel({ onSubmit, msaCode }: Props) {
         <p className="login-card__desc">Microsoftアカウントでログインしてください</p>
 
         {msaCode ? (
-          <div className="msa-code-box">
-            <p className="msa-code-box__label">Microsoftでの認証が必要です</p>
-            <p className="msa-code-box__step">
-              <a
-                className="msa-code-box__link"
-                href={msaCode.verificationUri}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {msaCode.verificationUri}
-              </a>{" "}
-              にアクセスして、以下のコードを入力してください：
-            </p>
-            <div className="msa-code-box__code">{msaCode.userCode}</div>
-            <p className="msa-code-box__note">認証が完了すると自動的に接続されます。</p>
-          </div>
+          <MsaCodeDisplay
+            userCode={msaCode.userCode}
+            verificationUri={msaCode.verificationUri}
+            variant="card"
+          />
         ) : (
           <form className="login-card__form" onSubmit={handleSubmit}>
             <div className="login-card__field">
