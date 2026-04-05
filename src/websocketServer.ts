@@ -44,7 +44,7 @@ export function startWebSocketServer(bot: Bot): void {
 function handleClientMessage(bot: Bot, ws: WebSocket, msg: Record<string, unknown>): void {
   if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
     const text = msg.text.trim();
-    bot.chat(`/${text}/`);
+    bot.chat(text);
     emit("send", `[SEND/WEB] ${text}`);
     broadcast({ type: "sent", text, time: ts() });
     return;

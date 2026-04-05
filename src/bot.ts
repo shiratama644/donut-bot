@@ -5,12 +5,14 @@ import { broadcast } from "./broadcast.js";
 import { startWebSocketServer } from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
+import { startStatusBroadcast } from "./status.js";
 
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
   log.info(`接続中… host=${CONFIG.host} version=${CONFIG.version} auth=${CONFIG.auth}`);
   const bot = mineflayer.createBot(CONFIG);
   let coordTimer: ReturnType<typeof setInterval> | null = null;
+  let statusTimer: ReturnType<typeof setInterval> | null = null;
 
   bot.once("login", () =>
     log.info(`ログイン成功 — ユーザー名: ${bot.username}  EntityId: ${bot.entity?.id ?? "?"}`));
@@ -19,6 +21,7 @@ export function createBot(): Bot {
     log.info("スポーン完了。");
     startWebSocketServer(bot);
     coordTimer = startCoordDisplay(bot);
+    statusTimer = startStatusBroadcast(bot);
   });
 
   // 移動のたびに座標をブロードキャスト（スロットリングで過剰送信を防止）
@@ -38,6 +41,7 @@ export function createBot(): Bot {
   bot.on("error",    (err) => log.error("エラー", err));
   bot.on("end",      (reason) => {
     if (coordTimer) clearInterval(coordTimer);
+    if (statusTimer) clearInterval(statusTimer);
     process.stdout.write("\n");
     log.warn(`切断 — 理由: ${reason}`);
     process.exit(0);
