@@ -8,9 +8,10 @@ interface Props {
   connected: boolean;
   theme: Theme;
   onToggleTheme: () => void;
+  onOpenStatus: () => void;
 }
 
-export default function Header({ position, connected, theme, onToggleTheme }: Props) {
+export default function Header({ position, connected, theme, onToggleTheme, onOpenStatus }: Props) {
   const fmt = (n: number) => n.toFixed(1);
 
   return (
@@ -61,6 +62,18 @@ export default function Header({ position, connected, theme, onToggleTheme }: Pr
         title={theme === "dark" ? "ライトテーマに切り替え" : "ダークテーマに切り替え"}
       >
         {theme === "dark" ? "☀️" : "🌙"}
+      </button>
+
+      <button
+        type="button"
+        className="app-header__menu-btn"
+        onClick={onOpenStatus}
+        aria-label="ステータスメニューを開く"
+        title="Bot Status"
+      >
+        <span className="app-header__menu-icon" aria-hidden="true" />
+        <span className="app-header__menu-icon" aria-hidden="true" />
+        <span className="app-header__menu-icon" aria-hidden="true" />
       </button>
     </header>
   );

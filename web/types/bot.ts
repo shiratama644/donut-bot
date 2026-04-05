@@ -31,7 +31,19 @@ export interface SentMessage {
   time: string;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage;
+export interface BotStatusMessage {
+  type: "status";
+  username: string;
+  health: number;
+  food: number;
+  foodSaturation: number;
+  gameMode: string;
+  experienceLevel: number;
+  experiencePoints: number;
+  ping: number;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage;
 
 export interface Position {
   x: number;

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
+import StatusPanel from "@/components/StatusPanel";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
 import { useTheme } from "@/hooks/useTheme";
-import type { Position } from "@/types/bot";
+import type { Position, BotStatusMessage } from "@/types/bot";
 
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ??
@@ -16,6 +17,8 @@ const WS_URL =
 export default function HomePage() {
   const ws = useBotWebSocket(WS_URL);
   const [position, setPosition] = useState<Position | null>(null);
+  const [botStatus, setBotStatus] = useState<BotStatusMessage | null>(null);
+  const [statusOpen, setStatusOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
   const { onMessage } = ws;
@@ -23,6 +26,8 @@ export default function HomePage() {
     return onMessage((msg) => {
       if (msg.type === "pos") {
         setPosition({ x: msg.x, y: msg.y, z: msg.z });
+      } else if (msg.type === "status") {
+        setBotStatus(msg);
       }
     });
   }, [onMessage]);
@@ -34,8 +39,14 @@ export default function HomePage() {
         connected={ws.connected}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onOpenStatus={() => setStatusOpen(true)}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
+      <StatusPanel
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
+        status={botStatus}
+      />
     </div>
   );
 }
