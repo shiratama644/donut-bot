@@ -38,7 +38,7 @@ cp .env.example .env
 |--------|------|------|
 | `HOST` | ✅ | 接続先 Minecraft サーバーのホスト名（例: `donutsmp.net`） |
 | `PORT` | | Minecraft サーバーのポート番号（デフォルト: `25565`） |
-| `USERNAME` | ✅ | Bot のユーザー名 |
+| `BOT_USERNAME` | ✅ | Bot のユーザー名 |
 | `AUTH` | ✅ | 認証方式: `microsoft` または `offline` |
 | `VERSION` | | Minecraft のバージョン（例: `1.21.1`）。サーバーに合わせて設定 |
 | `WEB_PORT` | | Bot WebSocket サーバーのポート番号（デフォルト: `3000`） |

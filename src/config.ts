@@ -2,7 +2,7 @@
 export const CONFIG = {
   host:     process.env.HOST     ?? "donutsmp.net",
   port:     Number(process.env.PORT ?? 25565),
-  username: process.env.USERNAME ?? (() => { throw new Error(".env に USERNAME が未設定です"); })(),
+  username: process.env.BOT_USERNAME ?? (() => { throw new Error(".env に BOT_USERNAME が未設定です"); })(),
   auth:     (process.env.AUTH    ?? "microsoft") as "microsoft" | "offline",
   version:  process.env.VERSION  ?? "1.21.1",
 } as const;
