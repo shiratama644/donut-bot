@@ -40,6 +40,7 @@ export interface BotStatusMessage {
   gameMode: string;
   experienceLevel: number;
   experiencePoints: number;
+  experienceProgress: number;
   ping: number;
 }
 

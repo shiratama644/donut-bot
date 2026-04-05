@@ -17,11 +17,11 @@ function StatusRow({ label, value }: { label: string; value: string | number }) 
   );
 }
 
-function HealthBar({ value, max }: { value: number; max: number }) {
+function HealthBar({ value, max, colorClass }: { value: number; max: number; colorClass?: string }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div className="status-panel__bar-wrap" aria-label={`${value} / ${max}`}>
-      <div className="status-panel__bar-fill" style={{ width: `${pct}%` }} />
+      <div className={`status-panel__bar-fill ${colorClass ?? ""}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -74,10 +74,15 @@ export default function StatusPanel({ open, onClose, status }: Props) {
               <HealthBar value={status.food} max={20} />
 
               <StatusRow label="🌟 満腹度" value={status.foodSaturation.toFixed(1)} />
+              <HealthBar value={status.foodSaturation} max={20} colorClass="status-panel__bar-fill--sat" />
 
               <div className="status-panel__section-title">経験値</div>
-              <StatusRow label="レベル" value={status.experienceLevel} />
-              <StatusRow label="ポイント" value={status.experiencePoints} />
+              <div className="status-panel__row status-panel__row--bar">
+                <span className="status-panel__label">⭐ レベル</span>
+                <span className="status-panel__value">{status.experienceLevel}</span>
+              </div>
+              <HealthBar value={status.experienceProgress ?? 0} max={1} colorClass="status-panel__bar-fill--xp" />
+              <StatusRow label="💠 ポイント" value={status.experiencePoints} />
             </>
           ) : (
             <div className="status-panel__empty">接続待機中…</div>

@@ -636,6 +636,14 @@ body {
   transition: width 0.4s ease;
 }
 
+.status-panel__bar-fill--sat {
+  background: var(--c-yellow);
+}
+
+.status-panel__bar-fill--xp {
+  background: var(--c-green);
+}
+
 .status-panel__empty {
   font-size: 13px;
   color: var(--text-muted);

@@ -12,20 +12,22 @@ let cache = {
   gameMode: "unknown",
   experienceLevel: 0,
   experiencePoints: 0,
+  experienceProgress: 0,
   ping: 0,
 };
 
 function broadcastStatus(bot: Bot): void {
   // 有効な値のみキャッシュを上書きする
-  if (bot.username)                      cache.username        = bot.username;
-  if (bot.health != null)                cache.health          = bot.health;
-  if (bot.food != null)                  cache.food            = bot.food;
-  if (bot.foodSaturation != null)        cache.foodSaturation  = bot.foodSaturation;
-  if (bot.game?.gameMode)                cache.gameMode        = bot.game.gameMode;
-  if (bot.experience?.level != null)     cache.experienceLevel = bot.experience.level;
-  if (bot.experience?.points != null)    cache.experiencePoints = bot.experience.points;
+  if (bot.username)                          cache.username           = bot.username;
+  if (bot.health != null)                    cache.health             = bot.health;
+  if (bot.food != null)                      cache.food               = bot.food;
+  if (bot.foodSaturation != null)            cache.foodSaturation     = bot.foodSaturation;
+  if (bot.game?.gameMode)                    cache.gameMode           = bot.game.gameMode;
+  if (bot.experience?.level != null)         cache.experienceLevel    = bot.experience.level;
+  if (bot.experience?.points != null)        cache.experiencePoints   = bot.experience.points;
+  if (bot.experience?.progress != null)      cache.experienceProgress = bot.experience.progress;
   const ping = bot.player?.ping;
-  if (ping != null && ping > 0)          cache.ping            = ping;
+  if (ping != null && ping > 0)              cache.ping               = ping;
 
   broadcast({ type: "status", ...cache });
 }
