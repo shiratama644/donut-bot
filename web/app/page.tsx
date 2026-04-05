@@ -97,28 +97,28 @@ export default function HomePage() {
         currentUsername={ws.currentUsername}
         onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
       />
-      {ws.wrongMcid && (
+      {ws.authState?.state === "REAUTH_REQUIRED" && ws.authState.expectedMcid && ws.authState.actualMcid && (
         <div className="notice-banner notice-banner--warn" role="alert">
           <span className="material-symbols-outlined notice-banner__icon">warning</span>
           <span>
-            MCID 不一致を検出しました（期待値: <strong>{ws.wrongMcid.expected}</strong>、
-            実際: <strong>{ws.wrongMcid.actual}</strong>
-            ）— トークンキャッシュをクリアして再認証中です…
+            MCID 不一致を検出しました（期待値: <strong>{ws.authState.expectedMcid}</strong>、
+            実際: <strong>{ws.authState.actualMcid}</strong>）。
+            自動再認証を実行中です（{ws.authState.attempt}/{ws.authState.maxAttempts}）。
           </span>
         </div>
       )}
-      {ws.reauthFailed && (
+      {ws.authState?.state === "FAILED" && ws.authState.username && (
         <div className="notice-banner notice-banner--error" role="alert">
           <span className="material-symbols-outlined notice-banner__icon">error</span>
           <span>
-            <strong>{ws.reauthFailed}</strong> の自動再認証が上限回数に達しました。
+            <strong>{ws.authState.username}</strong> の自動再認証が上限回数に達しました。
             アカウントメニューから手動で「再認証」を実行してください。
           </span>
           <button
             type="button"
             className="notice-banner__dismiss"
             aria-label="閉じる"
-            onClick={() => ws.actions.sendReauthAccount(ws.reauthFailed!)}
+            onClick={() => ws.actions.sendReauthAccount(ws.authState!.username!)}
           >
             <span className="material-symbols-outlined">refresh</span>
             再認証

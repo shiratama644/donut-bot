@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { BotMessage } from "@/types/bot";
+import type { AuthStatePayload, BotMessage } from "@/types/bot";
 
 const RECONNECT_DELAY_MS = 3000;
 
@@ -28,10 +28,8 @@ export interface BotWebSocketState {
   kickReason: string | null;
   /** Microsoft デバイスコード認証が必要な場合のデータ */
   msaCode: { userCode: string; verificationUri: string } | null;
-  /** MCID 不一致が検出され自動再認証中の場合のデータ。再接続成功時にリセットされる */
-  wrongMcid: { expected: string; actual: string } | null;
-  /** 自動再認証の上限に達した場合のアカウント名。手動再認証後にリセットされる */
-  reauthFailed: string | null;
+  /** 認証ライフサイクルの統合状態 */
+  authState: AuthStatePayload | null;
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -45,8 +43,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [accounts, setAccounts] = useState<{ username: string; mcid?: string }[]>([]);
   const [kickReason, setKickReason] = useState<string | null>(null);
   const [msaCode, setMsaCode] = useState<{ userCode: string; verificationUri: string } | null>(null);
-  const [wrongMcid, setWrongMcid] = useState<{ expected: string; actual: string } | null>(null);
-  const [reauthFailed, setReauthFailed] = useState<string | null>(null);
+  const [authState, setAuthState] = useState<AuthStatePayload | null>(null);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -84,8 +81,6 @@ export function useBotWebSocket(url: string): BotWebSocketState {
           setBotConnected(msg.connected);
           if (msg.connected) {
             setKickReason(null);
-            setWrongMcid(null);
-            setReauthFailed(null);
           }
           return;
         }
@@ -110,13 +105,8 @@ export function useBotWebSocket(url: string): BotWebSocketState {
           setMsaCode(null);
           return;
         }
-        if (msg.type === "wrongMcid") {
-          setWrongMcid({ expected: msg.expected, actual: msg.actual });
-          return;
-        }
-        if (msg.type === "reauthFailed") {
-          setReauthFailed(msg.username);
-          setWrongMcid(null);
+        if (msg.type === "authState") {
+          setAuthState(msg.auth);
           return;
         }
         handlersRef.current.forEach((h) => h(msg));
@@ -177,7 +167,6 @@ export function useBotWebSocket(url: string): BotWebSocketState {
 
   const sendReauthAccount = useCallback((username: string) => {
     send({ type: "reauthAccount", username });
-    setReauthFailed(null);
   }, [send]);
 
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
@@ -190,6 +179,5 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount, sendReauthAccount],
   );
 
-  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, msaCode, wrongMcid, reauthFailed, actions, onMessage };
+  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, msaCode, authState, actions, onMessage };
 }
-

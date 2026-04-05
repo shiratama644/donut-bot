@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "test": "node --test --experimental-strip-types src/**/*.test.ts",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "dev:all": "concurrently --names \"web,bot\" --prefix-colors \"cyan,yellow\" \"pnpm --filter donutsmp-bot-web dev\" \"pnpm dev\"",

@@ -8,6 +8,8 @@ export interface AccountEntry {
   mcid?: string;
 }
 
+type AccountPatch = Partial<Pick<AccountEntry, "mcid">>;
+
 const ACCOUNTS_PATH = path.join(process.cwd(), ".cache", "accounts.json");
 
 /** 保存済みアカウント一覧をファイルから読み込む */
@@ -36,16 +38,29 @@ export function saveAccounts(accounts: AccountEntry[]): void {
   }
 }
 
-/** アカウントを追加または更新する */
+/** アカウントの基本情報を追加する（既存の場合は破壊的更新しない） */
 export function addOrUpdateAccount(creds: Credentials): void {
   const accounts = loadAccounts();
   const idx = accounts.findIndex((a) => a.username === creds.username);
   if (idx >= 0) {
-    // 既存エントリを更新する際は mcid を引き継ぐ
-    accounts[idx] = { ...accounts[idx], username: creds.username };
+    // 既存エントリはそのまま維持（破壊的更新をしない）
+    accounts[idx] = { username: accounts[idx].username, mcid: accounts[idx].mcid };
   } else {
     accounts.push({ username: creds.username });
   }
+  saveAccounts(accounts);
+}
+
+/** 既存アカウントを明示的なフィールド単位で更新する（不明フィールドの破壊を防ぐ） */
+export function patchAccountEntry(username: string, patch: AccountPatch): void {
+  const accounts = loadAccounts();
+  const idx = accounts.findIndex((a) => a.username === username);
+  if (idx < 0) return;
+  const next: AccountEntry = {
+    username: accounts[idx].username,
+    mcid: patch.mcid ?? accounts[idx].mcid,
+  };
+  accounts[idx] = next;
   saveAccounts(accounts);
 }
 
@@ -78,12 +93,7 @@ export function getAccountCredentials(username: string): Credentials | null {
 
 /** ログイン後に MCID を記録する */
 export function updateAccountMcid(username: string, mcid: string): void {
-  const accounts = loadAccounts();
-  const idx = accounts.findIndex((a) => a.username === username);
-  if (idx >= 0) {
-    accounts[idx] = { ...accounts[idx], mcid };
-    saveAccounts(accounts);
-  }
+  patchAccountEntry(username, { mcid });
 }
 
 /**

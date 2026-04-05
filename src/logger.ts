@@ -7,6 +7,7 @@ export function ts(): string {
 
 // ─── ログ ────────────────────────────────────────────────
 export type LogLevel = "info" | "warn" | "error" | "send";
+type LogContext = Record<string, unknown>;
 
 export const log = {
   info:  (msg: string) => emit("info",  `[INFO]  ${ts()} ${msg}`),
@@ -19,6 +20,9 @@ export const log = {
     } else if (err !== undefined) {
       emit("error", `        detail  : ${JSON.stringify(err)}`);
     }
+  },
+  event: (level: Exclude<LogLevel, "send">, event: string, context: LogContext = {}) => {
+    emit(level, JSON.stringify({ ts: new Date().toISOString(), level, event, ...context }));
   },
 };
 

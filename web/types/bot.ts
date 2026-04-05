@@ -77,18 +77,31 @@ export interface MsaCodeClearedMessage {
   type: "msaCodeCleared";
 }
 
-export interface WrongMcidMessage {
-  type: "wrongMcid";
-  expected: string;
-  actual: string;
+export type AuthStateKind =
+  | "DISCONNECTED"
+  | "AUTHENTICATING"
+  | "CONNECTED"
+  | "REAUTH_REQUIRED"
+  | "FAILED";
+
+export interface AuthStatePayload {
+  state: AuthStateKind;
+  username: string | null;
+  sessionId: string | null;
+  attempt: number;
+  maxAttempts: number;
+  nextRetryAt: number | null;
+  reason: string | null;
+  expectedMcid: string | null;
+  actualMcid: string | null;
 }
 
-export interface ReauthFailedMessage {
-  type: "reauthFailed";
-  username: string;
+export interface AuthStateMessage {
+  type: "authState";
+  auth: AuthStatePayload;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | WrongMcidMessage | ReauthFailedMessage;
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | AuthStateMessage;
 
 export interface Position {
   x: number;

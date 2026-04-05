@@ -2,16 +2,31 @@ import mineflayer, { Bot } from "mineflayer";
 import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
-import { startWebSocketServer, setBotConnected, clearBotRef, setBotConnecting, requestMcidReauth } from "./websocketServer.js";
+import {
+  startWebSocketServer,
+  setBotConnected,
+  clearBotRef,
+  setBotConnecting,
+  requestMcidReauth,
+  beginAuthLifecycle,
+  markAuthConnected,
+  markAuthDisconnected,
+} from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
 import { getCredentials } from "./credentials.js";
 import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
 
+function createSessionId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
   const config = getConfig();
+  const sessionId = createSessionId();
+  beginAuthLifecycle(config.username, sessionId);
   setBotConnecting();
   log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
   const bot = mineflayer.createBot({
@@ -28,52 +43,39 @@ export function createBot(): Bot {
   let coordTimer: ReturnType<typeof setInterval> | null = null;
   let stopStatus: (() => void) | null = null;
 
-  /**
-   * MCID 不一致が検出された場合に spawn イベント内でこの理由で bot.end() を呼ぶ。
-   * setTimeout に依存せず、mineflayer のイベントシーケンスに沿った安全なタイミングで
-   * 切断を行うことでレースコンディションを回避する。
-   */
-  let pendingEndReason: string | null = null;
-  /** login イベントで確認した実際の MCID（spawn でのMCID保存に使用） */
-  let loginMcid: string | null = null;
-  /** MCID 不一致時に end ハンドラから requestMcidReauth() を呼ぶためのアカウント名 */
-  let pendingReauthUsername: string | null = null;
-
   bot.once("login", () => {
-    loginMcid = bot.username;
+    const currentMcid = bot.username;
     const creds = getCredentials();
     if (creds?.username) {
       const stored = getAccountEntry(creds.username);
-      if (stored?.mcid && stored.mcid !== loginMcid) {
+      if (stored?.mcid && stored.mcid !== currentMcid) {
         // キャッシュされたトークンが別アカウントのもの — キャッシュを削除して再認証する
         log.warn(
-          `MCID 不一致 [${creds.username}] — 期待値: ${stored.mcid}, 実際: ${loginMcid}` +
+          `MCID 不一致 [${creds.username}] — 期待値: ${stored.mcid}, 実際: ${currentMcid}` +
           ` — トークンキャッシュをクリアして再認証します`,
         );
-        broadcast({ type: "wrongMcid", expected: stored.mcid, actual: loginMcid });
         clearAccountProfileCache(creds.username);
-        pendingEndReason = "wrong mcid - reauthenticating";
-        pendingReauthUsername = creds.username;
+        requestMcidReauth(creds.username, {
+          expected: stored.mcid,
+          actual: currentMcid,
+          sessionId,
+        });
+        bot.end("wrong mcid - reauthenticating");
         return;
       }
     }
-    log.info(`ログイン成功 — ユーザー名: ${loginMcid}  EntityId: ${bot.entity?.id ?? "?"}`);
+    log.info(`ログイン成功 — ユーザー名: ${currentMcid}  EntityId: ${bot.entity?.id ?? "?"}`);
   });
 
   bot.once("spawn", () => {
-    // MCID 不一致が検出されていた場合は spawn 時点（状態が安定したタイミング）で切断する。
-    // setTimeout ではなくここで切断することでレースコンディションを回避する。
-    if (pendingEndReason) {
-      bot.end(pendingEndReason);
-      return;
-    }
-
     log.info("スポーン完了。");
-    // MCID の保存は spawn 後に行う（login 直後はゲーム内状態が確定していないため）
+    // MCID の保存は spawn 後に行う（ここを最終確定タイミングとする）
     const creds = getCredentials();
-    if (creds?.username && loginMcid) {
-      updateAccountMcid(creds.username, loginMcid);
+    const currentMcid = bot.username;
+    if (creds?.username && currentMcid) {
+      updateAccountMcid(creds.username, currentMcid);
       broadcast({ type: "accountsList", accounts: getAccountEntries() });
+      markAuthConnected(creds.username, sessionId);
     }
     startWebSocketServer(bot);
     setBotConnected(true);
@@ -119,15 +121,9 @@ export function createBot(): Bot {
     log.warn(`切断 — 理由: ${reason}`);
     clearBotRef(bot);
     setBotConnected(false);
+    markAuthDisconnected(reason, getCredentials()?.username ?? null);
     // デバイスコード表示をクリアする（ログイン前に切断された場合もクリア）
     broadcast({ type: "msaCodeCleared" });
-    // 意図的な切断（switchAccount / setCredentials）は once("end") リスナーが再接続を担当する。
-    // 非意図的な切断（キック等）はユーザーが手動で Online ボタンを押して再接続する。
-    // MCID 不一致による切断はキャッシュクリア後に自動再接続して正しいアカウントで認証し直す。
-    // requestMcidReauth は試行回数を追跡し、上限到達時は再接続せずにエラーを通知する。
-    if (reason === "wrong mcid - reauthenticating" && pendingReauthUsername) {
-      requestMcidReauth(pendingReauthUsername);
-    }
   });
 
   return bot;

@@ -7,6 +7,7 @@ import { broadcast, setWss } from "./broadcast.js";
 import { setStatusIntervalMs } from "./status.js";
 import { saveCredentials, getCredentials, clearCredentials } from "./credentials.js";
 import { getAccountEntries, getAccountCredentials, removeAccount, clearAccountProfileCache } from "./accounts.js";
+import { getAuthState, resetAuthState, setAuthState } from "./authState.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -15,10 +16,23 @@ let isBotConnected = false;
 let isConnecting = false;
 let reconnectCallback: (() => void) | null = null;
 
-/** MCID 不一致による自動再認証の最大試行回数 */
 const MAX_MCID_REAUTH_ATTEMPTS = 3;
-/** MCID 不一致による自動再認証の現在の試行回数（成功またはリセット時に 0 に戻る） */
-let mcidReauthAttemptCount = 0;
+const MCID_REAUTH_BASE_BACKOFF_MS = 1000;
+const MCID_REAUTH_MAX_BACKOFF_MS = 10000;
+
+interface McidRetryState {
+  username: string | null;
+  sessionId: string | null;
+  attempts: number;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
+const mcidRetryState: McidRetryState = {
+  username: null,
+  sessionId: null,
+  attempts: 0,
+  timer: null,
+};
 
 export function setReconnectCallback(fn: () => void): void {
   reconnectCallback = fn;
@@ -45,8 +59,6 @@ export function setBotConnected(connected: boolean): void {
   isBotConnected = connected;
   if (connected) {
     isConnecting = false;
-    // 正常接続時は自動再認証カウンターをリセットする
-    mcidReauthAttemptCount = 0;
   }
   broadcast({ type: "botConnection", connected });
 }
@@ -59,24 +71,163 @@ export function requestReconnect(): void {
 }
 
 /**
- * MCID 不一致による自動再認証を要求する。
- * 試行回数が上限に達した場合は再接続を行わず、ユーザーに手動対応を促す。
+ * 認証ライフサイクルを新規開始する。
  */
-export function requestMcidReauth(username: string): void {
-  mcidReauthAttemptCount++;
-  if (mcidReauthAttemptCount > MAX_MCID_REAUTH_ATTEMPTS) {
-    log.error(
-      `MCID 自動再認証の上限 (${MAX_MCID_REAUTH_ATTEMPTS}) に達しました [${username}]。` +
-      ` アカウントメニューから手動で再認証してください。`,
-    );
-    broadcast({ type: "reauthFailed", username });
-    // 次回の手動再認証が正しく動作するようにカウンターをリセット
-    mcidReauthAttemptCount = 0;
+export function beginAuthLifecycle(username: string, sessionId: string): void {
+  if (mcidRetryState.timer) {
+    clearTimeout(mcidRetryState.timer);
+    mcidRetryState.timer = null;
+  }
+  mcidRetryState.username = username;
+  mcidRetryState.sessionId = sessionId;
+  mcidRetryState.attempts = 0;
+  setAuthState({
+    state: "AUTHENTICATING",
+    username,
+    sessionId,
+    attempt: 0,
+    maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+    nextRetryAt: null,
+    reason: null,
+    expectedMcid: null,
+    actualMcid: null,
+  });
+  log.event("info", "auth.lifecycle.begin", { username, sessionId });
+}
+
+export function markAuthConnected(username: string, sessionId: string): void {
+  if (mcidRetryState.timer) {
+    clearTimeout(mcidRetryState.timer);
+    mcidRetryState.timer = null;
+  }
+  mcidRetryState.username = username;
+  mcidRetryState.sessionId = sessionId;
+  mcidRetryState.attempts = 0;
+  setAuthState({
+    state: "CONNECTED",
+    username,
+    sessionId,
+    attempt: 0,
+    maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+    nextRetryAt: null,
+    reason: null,
+    expectedMcid: null,
+    actualMcid: null,
+  });
+  log.event("info", "auth.lifecycle.connected", { username, sessionId });
+}
+
+function classifyMcidFailure(attempt: number): "transient" | "permanent" {
+  return attempt <= MAX_MCID_REAUTH_ATTEMPTS ? "transient" : "permanent";
+}
+
+function computeBackoffWithJitterMs(attempt: number): number {
+  const exponential = Math.min(
+    MCID_REAUTH_MAX_BACKOFF_MS,
+    MCID_REAUTH_BASE_BACKOFF_MS * (2 ** Math.max(0, attempt - 1)),
+  );
+  const jitter = Math.floor(Math.random() * 500);
+  return exponential + jitter;
+}
+
+/**
+ * MCID 不一致による自動再認証を要求する。
+ */
+export function requestMcidReauth(username: string, details: { expected: string; actual: string; sessionId: string }): void {
+  if (mcidRetryState.timer) {
+    clearTimeout(mcidRetryState.timer);
+    mcidRetryState.timer = null;
+  }
+  const attempt = mcidRetryState.attempts + 1;
+  const classification = classifyMcidFailure(attempt);
+  if (classification === "permanent") {
+    mcidRetryState.attempts = attempt;
+    setAuthState({
+      state: "FAILED",
+      username,
+      sessionId: details.sessionId,
+      attempt,
+      maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+      nextRetryAt: null,
+      reason: "mcid_mismatch_retry_exhausted",
+      expectedMcid: details.expected,
+      actualMcid: details.actual,
+    });
+    log.event("error", "auth.reauth.exhausted", {
+      username,
+      sessionId: details.sessionId,
+      attempt,
+      maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+      classification,
+      expectedMcid: details.expected,
+      actualMcid: details.actual,
+      recoverable: false,
+    });
     return;
   }
-  if (!isConnecting && !isBotConnected) {
-    reconnectCallback?.();
+
+  const delayMs = computeBackoffWithJitterMs(attempt);
+  const nextRetryAt = Date.now() + delayMs;
+  mcidRetryState.username = username;
+  mcidRetryState.sessionId = details.sessionId;
+  mcidRetryState.attempts = attempt;
+  setAuthState({
+    state: "REAUTH_REQUIRED",
+    username,
+    sessionId: details.sessionId,
+    attempt,
+    maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+    nextRetryAt,
+    reason: "mcid_mismatch",
+    expectedMcid: details.expected,
+    actualMcid: details.actual,
+  });
+  log.event("warn", "auth.reauth.scheduled", {
+    username,
+    sessionId: details.sessionId,
+    attempt,
+    maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+    classification,
+    recoverable: true,
+    expectedMcid: details.expected,
+    actualMcid: details.actual,
+    delayMs,
+    nextRetryAt,
+  });
+  mcidRetryState.timer = setTimeout(() => {
+    mcidRetryState.timer = null;
+    if (!isConnecting && !isBotConnected) {
+      setAuthState({
+        state: "AUTHENTICATING",
+        username,
+        sessionId: details.sessionId,
+        attempt,
+        maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
+        nextRetryAt: null,
+        reason: "mcid_mismatch_retry",
+      });
+      reconnectCallback?.();
+    }
+  }, delayMs);
+}
+
+export function markAuthDisconnected(reason: string, username: string | null): void {
+  const current = getAuthState();
+  if (current.state === "FAILED" || current.state === "REAUTH_REQUIRED") {
+    return;
   }
+  setAuthState({
+    state: "DISCONNECTED",
+    username,
+    sessionId: current.sessionId,
+    nextRetryAt: null,
+    reason,
+  });
+  log.event("warn", "auth.lifecycle.disconnected", {
+    username,
+    sessionId: current.sessionId,
+    reason,
+  });
 }
 
 // ─── WebSocket サーバー初期化（Bot なしで起動可能）────────
@@ -110,6 +261,10 @@ export function initWebSocketServer(): void {
     ws.send(JSON.stringify({
       type: "accountsList",
       accounts: getAccountEntries(),
+    }));
+    ws.send(JSON.stringify({
+      type: "authState",
+      auth: getAuthState(),
     }));
 
     // 接続時に現在の座標を送る
@@ -260,9 +415,9 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     // トークンキャッシュを削除して MSA 再認証を強制する
     clearAccountProfileCache(username);
     log.info(`再認証のためトークンキャッシュをクリアしました — ユーザー名: ${username}`);
-
-    // 手動再認証はカウンターをリセットして新規試行として扱う
-    mcidReauthAttemptCount = 0;
+    const current = getAuthState();
+    beginAuthLifecycle(username, current.sessionId ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    log.event("info", "auth.reauth.manual", { username, sessionId: getAuthState().sessionId });
 
     saveCredentials(savedCreds);
     broadcast({ type: "credentialsInfo", hasCredentials: true, username });
@@ -290,6 +445,8 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     // Botが接続中なら切断
     if (isBotConnected && botRef) {
       botRef.end("logged out");
+    } else {
+      resetAuthState(null);
     }
     return;
   }
