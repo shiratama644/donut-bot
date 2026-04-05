@@ -30,6 +30,15 @@ export function setBotConnected(connected: boolean): void {
   broadcast({ type: "botConnection", connected });
 }
 
+/** 非意図的な切断後に遅延して自動再接続する */
+export function triggerReconnect(delayMs = 5000): void {
+  setTimeout(() => {
+    if (!isBotConnected && getCredentials() !== null) {
+      reconnectCallback?.();
+    }
+  }, delayMs);
+}
+
 // ─── WebSocket サーバー初期化（Bot なしで起動可能）────────
 export function initWebSocketServer(): void {
   if (serverStarted) return;

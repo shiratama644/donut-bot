@@ -2,7 +2,7 @@ import mineflayer, { Bot } from "mineflayer";
 import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
-import { startWebSocketServer, takePendingIntentionalDisconnect, setBotConnected } from "./websocketServer.js";
+import { startWebSocketServer, takePendingIntentionalDisconnect, setBotConnected, triggerReconnect } from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
@@ -39,19 +39,24 @@ export function createBot(): Bot {
 
   registerChatHandler(bot);
 
-  bot.on("kicked",   (reason, loggedIn) => log.error(`キック (loggedIn=${loggedIn})`, { reason }));
+  bot.on("kicked",   (reason, loggedIn) => {
+    log.error(`キック (loggedIn=${loggedIn})`, { reason });
+    log.info("キックされました。切断後に自動再接続を試みます。");
+  });
   bot.on("error",    (err) => log.error("エラー", err));
   bot.on("end",      (reason) => {
     if (coordTimer) clearInterval(coordTimer);
     if (stopStatus) stopStatus();
     process.stdout.write("\n");
     log.warn(`切断 — 理由: ${reason}`);
-    if (takePendingIntentionalDisconnect()) {
-      // 意図的な切断 — プロセスを終了せず再接続コマンドを待つ
-      setBotConnected(false);
-    } else {
-      process.exit(0);
+    const wasIntentional = takePendingIntentionalDisconnect();
+    setBotConnected(false);
+    if (!wasIntentional) {
+      const delay = 5000;
+      log.info(`${delay / 1000}秒後に自動再接続します…`);
+      triggerReconnect(delay);
     }
+    // 意図的な切断の場合は once("end") リスナーが再接続を担当する
   });
 
   return bot;
