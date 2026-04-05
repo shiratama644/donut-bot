@@ -2,7 +2,7 @@ import mineflayer, { Bot } from "mineflayer";
 import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
-import { startWebSocketServer, takePendingIntentionalDisconnect, setBotConnected, triggerReconnect } from "./websocketServer.js";
+import { startWebSocketServer, setBotConnected, clearBotRef, setBotConnecting } from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
@@ -10,6 +10,7 @@ import { startStatusBroadcast } from "./status.js";
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
   const config = getConfig();
+  setBotConnecting();
   log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
   const bot = mineflayer.createBot(config);
   let coordTimer: ReturnType<typeof setInterval> | null = null;
@@ -41,7 +42,20 @@ export function createBot(): Bot {
 
   bot.on("kicked",   (reason, loggedIn) => {
     log.error(`キック (loggedIn=${loggedIn})`, { reason });
-    log.info("キックされました。切断後に自動再接続を試みます。");
+    // キック理由をパースして Web クライアントに通知する
+    let kickText = reason;
+    try {
+      const parsed = JSON.parse(reason) as Record<string, unknown>;
+      if (typeof parsed.text === "string") {
+        kickText = parsed.text;
+      } else if (typeof parsed.reason === "string") {
+        const inner = JSON.parse(parsed.reason) as Record<string, unknown>;
+        if (typeof inner.text === "string") kickText = inner.text;
+      }
+    } catch {
+      // パース失敗時はそのまま使用
+    }
+    broadcast({ type: "kicked", reason: kickText });
   });
   bot.on("error",    (err) => log.error("エラー", err));
   bot.on("end",      (reason) => {
@@ -49,14 +63,10 @@ export function createBot(): Bot {
     if (stopStatus) stopStatus();
     process.stdout.write("\n");
     log.warn(`切断 — 理由: ${reason}`);
-    const wasIntentional = takePendingIntentionalDisconnect();
+    clearBotRef(bot);
     setBotConnected(false);
-    if (!wasIntentional) {
-      const delay = 5000;
-      log.info(`${delay / 1000}秒後に自動再接続します…`);
-      triggerReconnect(delay);
-    }
-    // 意図的な切断の場合は once("end") リスナーが再接続を担当する
+    // 意図的な切断（switchAccount / setCredentials）は once("end") リスナーが再接続を担当する。
+    // 非意図的な切断（キック等）はユーザーが手動で Online ボタンを押して再接続する。
   });
 
   return bot;

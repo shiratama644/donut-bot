@@ -50,6 +50,12 @@ export interface BotConnectionMessage {
   connected: boolean;
 }
 
+export interface KickedMessage {
+  type: "kicked";
+  /** サーバーから送られたキック理由（人間が読める形式） */
+  reason: string;
+}
+
 export interface CredentialsInfoMessage {
   type: "credentialsInfo";
   hasCredentials: boolean;
@@ -61,7 +67,7 @@ export interface AccountsListMessage {
   usernames: string[];
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | CredentialsInfoMessage | AccountsListMessage;
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage;
 
 export interface Position {
   x: number;

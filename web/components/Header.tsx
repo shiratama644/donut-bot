@@ -15,12 +15,13 @@ interface Props {
   onOpenSettings: () => void;
   currentUsername: string | null;
   accounts: string[];
+  kickReason: string | null;
   onLogout: () => void;
   onSwitchAccount: (username: string) => void;
   onRemoveAccount: (username: string) => void;
 }
 
-export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, accounts, onLogout, onSwitchAccount, onRemoveAccount }: Props) {
+export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, accounts, kickReason, onLogout, onSwitchAccount, onRemoveAccount }: Props) {
   const fmt = (n: number) => n.toFixed(1);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -81,6 +82,17 @@ export default function Header({ position, connected, botConnected, onToggleConn
         />
         {botConnected ? "Online" : "Offline"}
       </button>
+
+      {!botConnected && kickReason && (
+        <span
+          className="app-header__kick-reason"
+          title={kickReason}
+          aria-label={`キック理由: ${kickReason}`}
+        >
+          <span className="material-symbols-outlined app-header__kick-reason-icon">report</span>
+          {kickReason}
+        </span>
+      )}
 
       <button
         type="button"
