@@ -20,10 +20,15 @@ import { getCredentials } from "./credentials.js";
 import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
 import { getAuthState, setAuthState } from "./authState.js";
 
+/** 認証セッション追跡用の暗号学的に安全な UUID v4 を生成する。 */
 function createSessionId(): string {
   return randomUUID();
 }
 
+/**
+ * 既存の再認証フロー中であれば同一 sessionId を再利用し、
+ * 新規接続フローでは新しい sessionId を発行して認証ライフサイクルを開始する。
+ */
 function resolveAuthSession(username: string): string {
   const current = getAuthState();
   if (
@@ -68,7 +73,9 @@ export function createBot(): Bot {
   bot.once("login", () => {
     const currentMcid = bot.username;
     const creds = getCredentials();
-    if (creds?.username) {
+    if (creds && !creds.username) {
+      log.warn("認証情報に username が存在しないため、MCID 検証をスキップしました");
+    } else if (creds?.username) {
       const stored = getAccountEntry(creds.username);
       if (stored?.mcid && stored.mcid !== currentMcid) {
         // キャッシュされたトークンが別アカウントのもの — キャッシュを削除して再認証する

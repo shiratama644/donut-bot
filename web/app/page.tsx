@@ -107,24 +107,28 @@ export default function HomePage() {
           </span>
         </div>
       )}
-      {ws.authState?.state === "FAILED" && ws.authState.username && (
-        <div className="notice-banner notice-banner--error" role="alert">
-          <span className="material-symbols-outlined notice-banner__icon">error</span>
-          <span>
-            <strong>{ws.authState.username}</strong> の自動再認証が上限回数に達しました。
-            アカウントメニューから手動で「再認証」を実行してください。
-          </span>
-          <button
-            type="button"
-            className="notice-banner__dismiss"
-            aria-label="閉じる"
-            onClick={() => ws.actions.sendReauthAccount(ws.authState!.username!)}
-          >
-            <span className="material-symbols-outlined">refresh</span>
-            再認証
-          </button>
-        </div>
-      )}
+      {ws.authState?.state === "FAILED" && (() => {
+        const failedUsername = ws.authState?.username;
+        if (!failedUsername) return null;
+        return (
+          <div className="notice-banner notice-banner--error" role="alert">
+            <span className="material-symbols-outlined notice-banner__icon">error</span>
+            <span>
+              <strong>{failedUsername}</strong> の自動再認証が上限回数に達しました。
+              アカウントメニューから手動で「再認証」を実行してください。
+            </span>
+            <button
+              type="button"
+              className="notice-banner__dismiss"
+              aria-label="閉じる"
+              onClick={() => ws.actions.sendReauthAccount(failedUsername)}
+            >
+              <span className="material-symbols-outlined">refresh</span>
+              再認証
+            </button>
+          </div>
+        );
+      })()}
       {ws.msaCode && (
         <div className="msa-code-overlay">
           <div className="msa-code-card">
