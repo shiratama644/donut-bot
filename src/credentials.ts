@@ -41,8 +41,8 @@ export function saveCredentials(creds: Credentials): void {
   try {
     fs.mkdirSync(path.dirname(CREDS_PATH), { recursive: true });
     fs.writeFileSync(CREDS_PATH, JSON.stringify(creds, null, 2), "utf-8");
-  } catch {
-    // 書き込みエラーは無視
+  } catch (err) {
+    console.warn("[credentials] 認証情報の保存に失敗しました。次回起動時に再入力が必要になる場合があります:", err);
   }
 }
 

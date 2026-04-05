@@ -119,7 +119,7 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
   if (msg.type === "setCredentials") {
     const username = typeof msg.username === "string" ? msg.username.trim() : "";
-    const password = typeof msg.password === "string" ? msg.password.trim() : "";
+    const password = typeof msg.password === "string" ? msg.password : "";
     if (!username) return;
 
     saveCredentials({ username, password: password || undefined });

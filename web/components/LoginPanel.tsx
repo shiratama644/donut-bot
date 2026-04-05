@@ -49,7 +49,7 @@ export default function LoginPanel({ onSubmit }: Props) {
               id="login-password"
               type="password"
               className="login-card__input"
-              placeholder="パスワード（任意）"
+              placeholder="パスワード（省略可 — デバイスコード認証）"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
