@@ -25,7 +25,13 @@ export interface LogMessage {
   line: string;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage;
+export interface SentMessage {
+  type: "sent";
+  text: string;
+  time: string;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage;
 
 export interface Position {
   x: number;

@@ -85,7 +85,7 @@ interface Props {
 // ─── メッセージエントリ型 ─────────────────────────────────
 type ChatEntry =
   | { id: number; type: "log"; level: string; line: string }
-  | { id: number; type: "chat" | "actionbar"; text: string; time?: string }
+  | { id: number; type: "chat" | "actionbar" | "sent"; text: string; time?: string }
   | { id: number; type: "sys"; text: string; ok: boolean };
 
 // ─── 定数 ────────────────────────────────────────────────
@@ -118,12 +118,15 @@ function MessageRow({ entry }: { entry: NonSysEntry }) {
   }
 
   const isChat = entry.type === "chat";
+  const isSent = entry.type === "sent";
   return (
-    <div className={`msg-chat-row ${isChat ? "msg-chat" : "msg-actionbar"}`}>
+    <div className={`msg-chat-row ${isChat ? "msg-chat" : isSent ? "msg-sent" : "msg-actionbar"}`}>
       <div className="msg-header">
         <span className="msg-sender">
           {isChat ? (
             <><span className="material-symbols-outlined msg-icon">chat_bubble</span> Minecraft Chat</>
+          ) : isSent ? (
+            <><span className="material-symbols-outlined msg-icon">send</span> 送信</>
           ) : (
             <><span className="material-symbols-outlined msg-icon">bolt</span> Action Bar</>
           )}
@@ -167,6 +170,8 @@ export default function ChatPanel({ ws, actions }: Props) {
         addEntry({ id: nextEntryId++, type: "log", level: msg.level, line: msg.line });
       } else if (msg.type === "chat" || msg.type === "actionbar") {
         addEntry({ id: nextEntryId++, type: msg.type, text: msg.text, time: msg.time });
+      } else if (msg.type === "sent") {
+        addEntry({ id: nextEntryId++, type: "sent", text: msg.text, time: msg.time });
       }
     });
   }, [onMessage, addEntry]);
@@ -226,7 +231,7 @@ export default function ChatPanel({ ws, actions }: Props) {
             <div
               key={entry.id}
               className={`msg-entry${
-                entry.type === "log" && entry.level === "send"
+                (entry.type === "log" && entry.level === "send") || entry.type === "sent"
                   ? " msg-entry--sent"
                   : entry.type === "chat"
                   ? " msg-entry--chat"
