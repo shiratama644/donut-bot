@@ -8,10 +8,13 @@ const RECONNECT_DELAY_MS = 3000;
 export interface BotWebSocketActions {
   sendChat: (text: string) => void;
   sendSetInterval: (ms: number) => void;
+  sendDisconnect: () => void;
+  sendReconnect: () => void;
 }
 
 export interface BotWebSocketState {
   connected: boolean;
+  botConnected: boolean;
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -19,6 +22,7 @@ export interface BotWebSocketState {
 export function useBotWebSocket(url: string): BotWebSocketState {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
+  const [botConnected, setBotConnected] = useState(false);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -51,6 +55,10 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     ws.onmessage = ({ data }) => {
       try {
         const msg = JSON.parse(data as string) as unknown as BotMessage;
+        if (msg.type === "botConnection") {
+          setBotConnected(msg.connected);
+          return;
+        }
         handlersRef.current.forEach((h) => h(msg));
       } catch {
         // 無効なJSON無視
@@ -83,16 +91,24 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "setStatusInterval", ms });
   }, [send]);
 
+  const sendDisconnect = useCallback(() => {
+    send({ type: "disconnect" });
+  }, [send]);
+
+  const sendReconnect = useCallback(() => {
+    send({ type: "reconnect" });
+  }, [send]);
+
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
     handlersRef.current.add(handler);
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
   const actions = useMemo(
-    () => ({ sendChat, sendSetInterval }),
-    [sendChat, sendSetInterval],
+    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect }),
+    [sendChat, sendSetInterval, sendDisconnect, sendReconnect],
   );
 
-  return { connected, actions, onMessage };
+  return { connected, botConnected, actions, onMessage };
 }
 

@@ -191,6 +191,24 @@ body {
   background: var(--bg-surface-2);
   border: 1px solid var(--border);
   white-space: nowrap;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  user-select: none;
+}
+
+.app-header__status-badge:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-input);
+}
+
+.app-header__status-badge:active:not(:disabled) {
+  opacity: 0.8;
+}
+
+.app-header__status-badge:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .app-header__status-dot {

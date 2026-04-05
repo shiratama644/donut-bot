@@ -26,7 +26,7 @@ export default function HomePage() {
   const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
   const { theme, toggleTheme } = useTheme();
 
-  const { onMessage } = ws;
+  const { onMessage, botConnected } = ws;
   useEffect(() => {
     return onMessage((msg) => {
       if (msg.type === "pos") {
@@ -36,6 +36,13 @@ export default function HomePage() {
       }
     });
   }, [onMessage]);
+
+  useEffect(() => {
+    if (!botConnected) {
+      setBotStatus(null);
+      setPosition(null);
+    }
+  }, [botConnected]);
 
   function handleIntervalChange(ms: number) {
     setIntervalMs(ms);
@@ -47,6 +54,10 @@ export default function HomePage() {
       <Header
         position={position}
         connected={ws.connected}
+        botConnected={ws.botConnected}
+        onToggleConnection={() =>
+          ws.botConnected ? ws.actions.sendDisconnect() : ws.actions.sendReconnect()
+        }
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenStatus={() => setStatusOpen(true)}
