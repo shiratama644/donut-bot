@@ -72,6 +72,8 @@ export default function HomePage() {
         onToggleTheme={toggleTheme}
         onOpenStatus={() => setStatusOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
+        currentUsername={ws.currentUsername}
+        onLogout={ws.actions.sendLogout}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
       <StatusPanel

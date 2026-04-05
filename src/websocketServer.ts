@@ -5,7 +5,7 @@ import { WEB_PORT } from "./config.js";
 import { log, emit, ts } from "./logger.js";
 import { broadcast, setWss } from "./broadcast.js";
 import { setStatusIntervalMs } from "./status.js";
-import { saveCredentials, getCredentials } from "./credentials.js";
+import { saveCredentials, getCredentials, clearCredentials } from "./credentials.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -139,6 +139,22 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     } else {
       // 未接続 → そのまま接続
       reconnectCallback?.();
+    }
+    return;
+  }
+
+  if (msg.type === "logout") {
+    // 認証情報を削除
+    clearCredentials();
+    log.info("ログアウトしました");
+
+    // 全クライアントに認証情報なしを通知
+    broadcast({ type: "credentialsInfo", hasCredentials: false, username: null });
+
+    // Botが接続中なら切断
+    if (isBotConnected && botRef) {
+      pendingIntentionalDisconnect = true;
+      botRef.end("logged out");
     }
     return;
   }

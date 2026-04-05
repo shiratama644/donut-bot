@@ -50,3 +50,15 @@ export function saveCredentials(creds: Credentials): void {
 export function getCredentials(): Credentials | null {
   return _credentials;
 }
+
+/** 認証情報をメモリと .cache/credentials.json から削除する */
+export function clearCredentials(): void {
+  _credentials = null;
+  try {
+    if (fs.existsSync(CREDS_PATH)) {
+      fs.unlinkSync(CREDS_PATH);
+    }
+  } catch (err) {
+    console.warn("[credentials] 認証情報の削除に失敗しました:", err);
+  }
+}

@@ -281,7 +281,77 @@ body {
   margin-right: 2px;
 }
 
-/* ─── Chat Panel ──────────────────────────────────────── */
+/* ─── Account Menu ────────────────────────────────────── */
+
+.app-header__account-wrapper {
+  position: relative;
+}
+
+.app-header__account-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.app-header__account-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.app-header__account-user-icon {
+  font-size: 18px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.app-header__account-username {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.app-header__account-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+.app-header__account-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: var(--c-red);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+
+.app-header__account-logout-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.app-header__account-logout-btn:hover {
+  background: var(--bg-surface-2);
+}
+
+
 
 .chat-panel {
   display: flex;

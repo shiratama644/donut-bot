@@ -11,6 +11,7 @@ export interface BotWebSocketActions {
   sendDisconnect: () => void;
   sendReconnect: () => void;
   sendSetCredentials: (username: string, password: string) => void;
+  sendLogout: () => void;
 }
 
 export interface BotWebSocketState {
@@ -115,14 +116,18 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "setCredentials", username, password });
   }, [send]);
 
+  const sendLogout = useCallback(() => {
+    send({ type: "logout" });
+  }, [send]);
+
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
     handlersRef.current.add(handler);
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
   const actions = useMemo(
-    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials }),
-    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials],
+    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout }),
+    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout],
   );
 
   return { connected, botConnected, hasCredentials, currentUsername, actions, onMessage };

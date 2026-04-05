@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import type { Position } from "@/types/bot";
 import type { Theme } from "@/hooks/useTheme";
 
@@ -12,10 +13,25 @@ interface Props {
   onToggleTheme: () => void;
   onOpenStatus: () => void;
   onOpenSettings: () => void;
+  currentUsername: string | null;
+  onLogout: () => void;
 }
 
-export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings }: Props) {
+export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, onLogout }: Props) {
   const fmt = (n: number) => n.toFixed(1);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountMenuOpen]);
 
   return (
     <header className="app-header" role="banner">
@@ -92,6 +108,41 @@ export default function Header({ position, connected, botConnected, onToggleConn
       >
         <span className="material-symbols-outlined">monitor_heart</span>
       </button>
+
+      <div className="app-header__account-wrapper" ref={menuRef}>
+        <button
+          type="button"
+          className="app-header__icon-btn"
+          onClick={() => setAccountMenuOpen((o) => !o)}
+          aria-label="アカウントメニューを開く"
+          aria-expanded={accountMenuOpen}
+          title="アカウント"
+        >
+          <span className="material-symbols-outlined">account_circle</span>
+        </button>
+
+        {accountMenuOpen && (
+          <div className="app-header__account-menu" role="menu">
+            <div className="app-header__account-user">
+              <span className="material-symbols-outlined app-header__account-user-icon">person</span>
+              <span className="app-header__account-username">{currentUsername ?? "不明"}</span>
+            </div>
+            <div className="app-header__account-divider" />
+            <button
+              type="button"
+              className="app-header__account-logout-btn"
+              role="menuitem"
+              onClick={() => {
+                setAccountMenuOpen(false);
+                onLogout();
+              }}
+            >
+              <span className="material-symbols-outlined">logout</span>
+              ログアウト
+            </button>
+          </div>
+        )}
+      </div>
     </header>
   );
 }
