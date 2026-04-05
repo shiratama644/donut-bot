@@ -32,7 +32,7 @@ function broadcastStatus(bot: Bot): void {
   if (bot.experience?.points != null)        cache.experiencePoints   = bot.experience.points;
   if (bot.experience?.progress != null)      cache.experienceProgress = bot.experience.progress; // 次のレベルへの進捗 (0.0 〜 1.0)
   const ping = bot.player?.ping;
-  if (ping != null && ping > 0)              cache.ping               = ping;
+  if (ping != null && ping >= 0)             cache.ping               = ping;
 
   broadcast({ type: "status", ...cache });
 }
