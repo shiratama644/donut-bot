@@ -94,6 +94,9 @@ export default function SettingsPanel({ open, onClose, intervalMs, onIntervalCha
                 onChange={(e) => setNewUsername(e.target.value)}
                 autoComplete="username"
               />
+              <p className="settings-panel__creds-hint">
+                新しいアカウントの場合、再接続後にデバイスコードがこのページに表示されます
+              </p>
             </div>
             <button
               type="submit"

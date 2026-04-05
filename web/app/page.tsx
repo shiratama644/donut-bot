@@ -55,6 +55,7 @@ export default function HomePage() {
     return (
       <LoginPanel
         onSubmit={(username) => ws.actions.sendSetCredentials(username)}
+        msaCode={ws.msaCode}
       />
     );
   }
@@ -94,6 +95,29 @@ export default function HomePage() {
         currentUsername={ws.currentUsername}
         onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
       />
+      {ws.msaCode && (
+        <div className="msa-code-overlay">
+          <div className="msa-code-card">
+            <div className="msa-code-card__title">
+              <span className="material-symbols-outlined">key</span>
+              Microsoft 認証が必要です
+            </div>
+            <p className="msa-code-card__step">
+              <a
+                className="msa-code-card__link"
+                href={ws.msaCode.verificationUri}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {ws.msaCode.verificationUri}
+              </a>{" "}
+              にアクセスして、以下のコードを入力してください：
+            </p>
+            <div className="msa-code-card__code">{ws.msaCode.userCode}</div>
+            <p className="msa-code-card__note">認証が完了すると自動的に接続されます。</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
