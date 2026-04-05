@@ -30,7 +30,7 @@ function broadcastStatus(bot: Bot): void {
   if (bot.game?.gameMode)                    cache.gameMode           = bot.game.gameMode;
   if (bot.experience?.level != null)         cache.experienceLevel    = bot.experience.level;
   if (bot.experience?.points != null)        cache.experiencePoints   = bot.experience.points;
-  if (bot.experience?.progress != null)      cache.experienceProgress = bot.experience.progress;
+  if (bot.experience?.progress != null)      cache.experienceProgress = bot.experience.progress; // 次のレベルへの進捗 (0.0 〜 1.0)
   const ping = bot.player?.ping;
   if (ping != null && ping > 0)              cache.ping               = ping;
 
@@ -40,11 +40,10 @@ function broadcastStatus(bot: Bot): void {
 // ─── インターバル変更 ─────────────────────────────────────
 export function setStatusIntervalMs(ms: number): void {
   currentIntervalMs = Math.max(10, Math.min(5000, ms));
-  if (statusHandle !== null) {
+  if (statusHandle !== null && currentBot !== null) {
     clearInterval(statusHandle);
-    if (currentBot) {
-      statusHandle = setInterval(() => broadcastStatus(currentBot!), currentIntervalMs);
-    }
+    const bot = currentBot;
+    statusHandle = setInterval(() => broadcastStatus(bot), currentIntervalMs);
   }
 }
 

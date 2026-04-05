@@ -119,7 +119,7 @@ export default function StatusPanel({ open, onClose, status, position }: Props) 
                 </span>
                 <span className="status-panel__value">{status.experienceLevel}</span>
               </div>
-              <HealthBar value={status.experienceProgress ?? 0} max={1} colorClass="status-panel__bar-fill--xp" />
+              <HealthBar value={status.experienceProgress} max={1} colorClass="status-panel__bar-fill--xp" />
               <StatusRow label="ポイント" icon="diamond" value={status.experiencePoints} />
             </>
           ) : (
