@@ -5,6 +5,7 @@ import { WEB_PORT } from "./config.js";
 import { log, emit, ts } from "./logger.js";
 import { broadcast, setWss } from "./broadcast.js";
 import { setStatusIntervalMs } from "./status.js";
+import { saveCredentials, getCredentials } from "./credentials.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -28,11 +29,8 @@ export function setBotConnected(connected: boolean): void {
   broadcast({ type: "botConnection", connected });
 }
 
-// ─── WebSocket サーバー ───────────────────────────────────
-export function startWebSocketServer(bot: Bot): void {
-  botRef = bot;
-
-  // 再接続時はサーバーを再起動しない
+// ─── WebSocket サーバー初期化（Bot なしで起動可能）────────
+export function initWebSocketServer(): void {
   if (serverStarted) return;
   serverStarted = true;
 
@@ -49,6 +47,14 @@ export function startWebSocketServer(bot: Bot): void {
 
     // 接続時に現在のBot接続状態を送る
     ws.send(JSON.stringify({ type: "botConnection", connected: isBotConnected }));
+
+    // 接続時に認証情報の有無を送る（パスワードは送らない）
+    const creds = getCredentials();
+    ws.send(JSON.stringify({
+      type: "credentialsInfo",
+      hasCredentials: creds !== null,
+      username: creds?.username ?? null,
+    }));
 
     // 接続時に現在の座標を送る
     const pos = botRef?.entity?.position;
@@ -71,6 +77,14 @@ export function startWebSocketServer(bot: Bot): void {
   server.listen(WEB_PORT, () => {
     log.info(`WebSocket サーバー起動: ws://localhost:${WEB_PORT}`);
   });
+}
+
+// ─── Bot 接続時に botRef を更新（サーバーは再起動しない）──
+export function startWebSocketServer(bot: Bot): void {
+  botRef = bot;
+  // initWebSocketServer() が先に呼ばれていることを前提とするが、
+  // 呼ばれていない場合のフォールバックとしても機能する
+  initWebSocketServer();
 }
 
 function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void {
@@ -98,6 +112,32 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
   if (msg.type === "reconnect") {
     if (!isBotConnected) {
+      reconnectCallback?.();
+    }
+    return;
+  }
+
+  if (msg.type === "setCredentials") {
+    const username = typeof msg.username === "string" ? msg.username.trim() : "";
+    const password = typeof msg.password === "string" ? msg.password : "";
+    if (!username) return;
+
+    saveCredentials({ username, password: password || undefined });
+    log.info(`認証情報を更新しました — ユーザー名: ${username}`);
+
+    // 全クライアントに更新を通知（パスワードは送らない）
+    broadcast({ type: "credentialsInfo", hasCredentials: true, username });
+
+    if (isBotConnected && botRef) {
+      // 現在接続中 → 切断して再接続
+      pendingIntentionalDisconnect = true;
+      const currentBot = botRef;
+      currentBot.once("end", () => {
+        reconnectCallback?.();
+      });
+      currentBot.end("credentials updated");
+    } else {
+      // 未接続 → そのまま接続
       reconnectCallback?.();
     }
     return;

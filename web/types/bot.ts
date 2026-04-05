@@ -50,7 +50,13 @@ export interface BotConnectionMessage {
   connected: boolean;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage;
+export interface CredentialsInfoMessage {
+  type: "credentialsInfo";
+  hasCredentials: boolean;
+  username: string | null;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | CredentialsInfoMessage;
 
 export interface Position {
   x: number;
