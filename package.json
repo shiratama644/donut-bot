@@ -17,7 +17,7 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.16",
+    "@types/node": "^22.19.17",
     "@types/ws": "^8.18.1",
     "concurrently": "^9.2.1",
     "tsx": "^4.21.0",

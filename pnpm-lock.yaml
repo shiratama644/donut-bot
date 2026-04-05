@@ -19,8 +19,8 @@ importers:
         version: 8.20.0
     devDependencies:
       '@types/node':
-        specifier: ^22.19.16
-        version: 22.19.16
+        specifier: ^22.19.17
+        version: 22.19.17
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
@@ -562,6 +562,9 @@ packages:
 
   '@types/node@22.19.16':
     resolution: {integrity: sha512-K6csxIjY+9RoDxdP6/wzaJzXaCf4znBz0/y0rrQDsbqmzQ5QFsOjubbsYWZhj6ZCgz3mjlyDZS+EJkhA9jWl9Q==}
+
+  '@types/node@22.19.17':
+    resolution: {integrity: sha512-wGdMcf+vPYM6jikpS/qhg6WiqSV/OhG+jeeHT/KlVqxYfD40iYJf9/AE1uQxVWFvU7MipKRkRv8NSHiCGgPr8Q==}
 
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -1513,9 +1516,13 @@ snapshots:
 
   '@types/node-rsa@1.1.4':
     dependencies:
-      '@types/node': 22.19.16
+      '@types/node': 22.19.17
 
   '@types/node@22.19.16':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.19.17':
     dependencies:
       undici-types: 6.21.0
 
@@ -1529,11 +1536,11 @@ snapshots:
 
   '@types/readable-stream@4.0.23':
     dependencies:
-      '@types/node': 22.19.16
+      '@types/node': 22.19.17
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 22.19.16
+      '@types/node': 22.19.17
 
   '@xboxreplay/errors@0.1.0': {}
 
