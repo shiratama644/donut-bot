@@ -83,7 +83,12 @@ export interface WrongMcidMessage {
   actual: string;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | WrongMcidMessage;
+export interface ReauthFailedMessage {
+  type: "reauthFailed";
+  username: string;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | WrongMcidMessage | ReauthFailedMessage;
 
 export interface Position {
   x: number;

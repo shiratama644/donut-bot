@@ -15,6 +15,11 @@ let isBotConnected = false;
 let isConnecting = false;
 let reconnectCallback: (() => void) | null = null;
 
+/** MCID 不一致による自動再認証の最大試行回数 */
+const MAX_MCID_REAUTH_ATTEMPTS = 3;
+/** MCID 不一致による自動再認証の現在の試行回数（成功またはリセット時に 0 に戻る） */
+let mcidReauthAttemptCount = 0;
+
 export function setReconnectCallback(fn: () => void): void {
   reconnectCallback = fn;
 }
@@ -38,12 +43,37 @@ export function clearBotRef(bot: Bot): void {
 
 export function setBotConnected(connected: boolean): void {
   isBotConnected = connected;
-  if (connected) isConnecting = false;
+  if (connected) {
+    isConnecting = false;
+    // 正常接続時は自動再認証カウンターをリセットする
+    mcidReauthAttemptCount = 0;
+  }
   broadcast({ type: "botConnection", connected });
 }
 
 /** MCID 不一致などの内部的な切断後に再接続を要求する */
 export function requestReconnect(): void {
+  if (!isConnecting && !isBotConnected) {
+    reconnectCallback?.();
+  }
+}
+
+/**
+ * MCID 不一致による自動再認証を要求する。
+ * 試行回数が上限に達した場合は再接続を行わず、ユーザーに手動対応を促す。
+ */
+export function requestMcidReauth(username: string): void {
+  mcidReauthAttemptCount++;
+  if (mcidReauthAttemptCount > MAX_MCID_REAUTH_ATTEMPTS) {
+    log.error(
+      `MCID 自動再認証の上限 (${MAX_MCID_REAUTH_ATTEMPTS}) に達しました [${username}]。` +
+      ` アカウントメニューから手動で再認証してください。`,
+    );
+    broadcast({ type: "reauthFailed", username });
+    // 次回の手動再認証が正しく動作するようにカウンターをリセット
+    mcidReauthAttemptCount = 0;
+    return;
+  }
   if (!isConnecting && !isBotConnected) {
     reconnectCallback?.();
   }
@@ -230,6 +260,9 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     // トークンキャッシュを削除して MSA 再認証を強制する
     clearAccountProfileCache(username);
     log.info(`再認証のためトークンキャッシュをクリアしました — ユーザー名: ${username}`);
+
+    // 手動再認証はカウンターをリセットして新規試行として扱う
+    mcidReauthAttemptCount = 0;
 
     saveCredentials(savedCreds);
     broadcast({ type: "credentialsInfo", hasCredentials: true, username });

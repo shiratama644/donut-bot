@@ -1409,6 +1409,60 @@ input::-webkit-credentials-auto-fill-button {
   margin: 0;
 }
 
+/* Notice banners (MCID mismatch, reauth failed) */
+.notice-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.notice-banner--warn {
+  background: color-mix(in srgb, var(--c-yellow, #e6a817) 15%, var(--bg-surface));
+  color: var(--c-yellow, #e6a817);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-yellow, #e6a817) 40%, transparent);
+}
+
+.notice-banner--error {
+  background: color-mix(in srgb, var(--c-red) 15%, var(--bg-surface));
+  color: var(--c-red);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-red) 40%, transparent);
+}
+
+.notice-banner__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.notice-banner span {
+  flex: 1;
+}
+
+.notice-banner__dismiss {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.notice-banner__dismiss:hover {
+  background: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.notice-banner__dismiss .material-symbols-outlined {
+  font-size: 14px;
+}
+
 /* Overlay shown when a logged-in user re-authenticates */
 .msa-code-overlay {
   position: fixed;

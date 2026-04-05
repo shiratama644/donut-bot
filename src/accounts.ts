@@ -40,11 +40,11 @@ export function saveAccounts(accounts: AccountEntry[]): void {
 export function addOrUpdateAccount(creds: Credentials): void {
   const accounts = loadAccounts();
   const idx = accounts.findIndex((a) => a.username === creds.username);
-  const entry: AccountEntry = { username: creds.username };
   if (idx >= 0) {
-    accounts[idx] = entry;
+    // 既存エントリを更新する際は mcid を引き継ぐ
+    accounts[idx] = { ...accounts[idx], username: creds.username };
   } else {
-    accounts.push(entry);
+    accounts.push({ username: creds.username });
   }
   saveAccounts(accounts);
 }
