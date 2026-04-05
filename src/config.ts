@@ -14,8 +14,9 @@ export function getConfig() {
     auth:           (process.env.AUTH    ?? "microsoft") as "microsoft" | "offline",
     version:        process.env.VERSION  ?? "1.21.1",
     // パスワードを渡さないことでデバイスコードフロー（ブラウザ認証）を使用する
-    // 認証トークンのキャッシュ先（デフォルト: プロジェクトルートの .cache/）
-    profilesFolder: process.env.PROFILES_FOLDER ?? path.join(process.cwd(), ".cache"),
+    // 認証トークンのキャッシュ先はアカウントごとに分けることで、
+    // アカウント切り替え時に別アカウントのトークンが使われないようにする
+    profilesFolder: process.env.PROFILES_FOLDER ?? path.join(process.cwd(), ".cache", "profiles", creds.username),
   };
 }
 
