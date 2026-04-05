@@ -73,7 +73,10 @@ export default function HomePage() {
         onOpenStatus={() => setStatusOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         currentUsername={ws.currentUsername}
+        accounts={ws.accounts}
         onLogout={ws.actions.sendLogout}
+        onSwitchAccount={ws.actions.sendSwitchAccount}
+        onRemoveAccount={ws.actions.sendRemoveAccount}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
       <StatusPanel

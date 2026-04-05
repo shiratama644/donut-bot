@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { addOrUpdateAccount } from "./accounts.js";
 
 export interface Credentials {
   username: string;
@@ -35,7 +36,7 @@ export function loadCredentials(): Credentials | null {
   return null;
 }
 
-/** 認証情報を .cache/credentials.json に保存し、メモリを更新する */
+/** 認証情報を .cache/credentials.json に保存し、アカウント一覧にも追加する */
 export function saveCredentials(creds: Credentials): void {
   _credentials = { ...creds };
   try {
@@ -44,6 +45,7 @@ export function saveCredentials(creds: Credentials): void {
   } catch (err) {
     console.warn("[credentials] 認証情報の保存に失敗しました。次回起動時に再入力が必要になる場合があります:", err);
   }
+  addOrUpdateAccount(creds);
 }
 
 /** 現在の認証情報（メモリ）を返す */
@@ -62,3 +64,4 @@ export function clearCredentials(): void {
     console.warn("[credentials] 認証情報の削除に失敗しました:", err);
   }
 }
+

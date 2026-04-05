@@ -12,6 +12,8 @@ export interface BotWebSocketActions {
   sendReconnect: () => void;
   sendSetCredentials: (username: string, password: string) => void;
   sendLogout: () => void;
+  sendSwitchAccount: (username: string) => void;
+  sendRemoveAccount: (username: string) => void;
 }
 
 export interface BotWebSocketState {
@@ -20,6 +22,7 @@ export interface BotWebSocketState {
   /** null = サーバーからの応答待ち */
   hasCredentials: boolean | null;
   currentUsername: string | null;
+  accounts: string[];
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -30,6 +33,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [botConnected, setBotConnected] = useState(false);
   const [hasCredentials, setHasCredentials] = useState<boolean | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<string[]>([]);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -70,6 +74,10 @@ export function useBotWebSocket(url: string): BotWebSocketState {
         if (msg.type === "credentialsInfo") {
           setHasCredentials(msg.hasCredentials);
           setCurrentUsername(msg.username);
+          return;
+        }
+        if (msg.type === "accountsList") {
+          setAccounts(msg.usernames);
           return;
         }
         handlersRef.current.forEach((h) => h(msg));
@@ -120,16 +128,24 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "logout" });
   }, [send]);
 
+  const sendSwitchAccount = useCallback((username: string) => {
+    send({ type: "switchAccount", username });
+  }, [send]);
+
+  const sendRemoveAccount = useCallback((username: string) => {
+    send({ type: "removeAccount", username });
+  }, [send]);
+
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
     handlersRef.current.add(handler);
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
   const actions = useMemo(
-    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout }),
-    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout],
+    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount }),
+    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount],
   );
 
-  return { connected, botConnected, hasCredentials, currentUsername, actions, onMessage };
+  return { connected, botConnected, hasCredentials, currentUsername, accounts, actions, onMessage };
 }
 

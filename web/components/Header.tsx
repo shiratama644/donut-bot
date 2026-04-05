@@ -14,13 +14,18 @@ interface Props {
   onOpenStatus: () => void;
   onOpenSettings: () => void;
   currentUsername: string | null;
+  accounts: string[];
   onLogout: () => void;
+  onSwitchAccount: (username: string) => void;
+  onRemoveAccount: (username: string) => void;
 }
 
-export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, onLogout }: Props) {
+export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, accounts, onLogout, onSwitchAccount, onRemoveAccount }: Props) {
   const fmt = (n: number) => n.toFixed(1);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const otherAccounts = accounts.filter((u) => u !== currentUsername);
 
   useEffect(() => {
     if (!accountMenuOpen) return;
@@ -123,10 +128,47 @@ export default function Header({ position, connected, botConnected, onToggleConn
 
         {accountMenuOpen && (
           <div className="app-header__account-menu" role="menu">
-            <div className="app-header__account-user">
-              <span className="material-symbols-outlined app-header__account-user-icon">person</span>
-              <span className="app-header__account-username">{currentUsername ?? "不明"}</span>
+            {/* 現在のアカウント */}
+            <div className="app-header__account-section-label">ログイン中</div>
+            <div className="app-header__account-row app-header__account-row--active">
+              <span className="material-symbols-outlined app-header__account-row-icon">person</span>
+              <span className="app-header__account-row-name">{currentUsername ?? "不明"}</span>
             </div>
+
+            {/* その他のアカウント */}
+            {otherAccounts.length > 0 && (
+              <>
+                <div className="app-header__account-divider" />
+                <div className="app-header__account-section-label">アカウント切り替え</div>
+                {otherAccounts.map((username) => (
+                  <div key={username} className="app-header__account-row">
+                    <button
+                      type="button"
+                      className="app-header__account-row-switch"
+                      role="menuitem"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        onSwitchAccount(username);
+                      }}
+                      title={`${username} に切り替え`}
+                    >
+                      <span className="material-symbols-outlined app-header__account-row-icon">person_outline</span>
+                      <span className="app-header__account-row-name">{username}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="app-header__account-row-remove"
+                      aria-label={`${username} を削除`}
+                      title="削除"
+                      onClick={() => onRemoveAccount(username)}
+                    >
+                      <span className="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                ))}
+              </>
+            )}
+
             <div className="app-header__account-divider" />
             <button
               type="button"
