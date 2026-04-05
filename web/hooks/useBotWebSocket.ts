@@ -23,6 +23,8 @@ export interface BotWebSocketState {
   hasCredentials: boolean | null;
   currentUsername: string | null;
   accounts: string[];
+  /** 最後にキックされた理由。再接続成功時にリセットされる */
+  kickReason: string | null;
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -34,6 +36,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [hasCredentials, setHasCredentials] = useState<boolean | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<string[]>([]);
+  const [kickReason, setKickReason] = useState<string | null>(null);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -69,6 +72,11 @@ export function useBotWebSocket(url: string): BotWebSocketState {
         const msg = JSON.parse(data as string) as unknown as BotMessage;
         if (msg.type === "botConnection") {
           setBotConnected(msg.connected);
+          if (msg.connected) setKickReason(null);
+          return;
+        }
+        if (msg.type === "kicked") {
+          setKickReason(msg.reason);
           return;
         }
         if (msg.type === "credentialsInfo") {
@@ -146,6 +154,6 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount],
   );
 
-  return { connected, botConnected, hasCredentials, currentUsername, accounts, actions, onMessage };
+  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, actions, onMessage };
 }
 

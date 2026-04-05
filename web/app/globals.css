@@ -228,6 +228,26 @@ body {
   background: var(--status-offline);
 }
 
+/* キック理由バッジ */
+.app-header__kick-reason {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--status-offline, #ef4444);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+}
+
+.app-header__kick-reason-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 .app-header__theme-btn {
   width: 34px;
   height: 34px;

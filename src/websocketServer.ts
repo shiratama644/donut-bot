@@ -11,22 +11,34 @@ import { getAccountUsernames, getAccountCredentials, removeAccount } from "./acc
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
 let serverStarted = false;
-let pendingIntentionalDisconnect = false;
 let isBotConnected = false;
+let isConnecting = false;
 let reconnectCallback: (() => void) | null = null;
 
 export function setReconnectCallback(fn: () => void): void {
   reconnectCallback = fn;
 }
 
-export function takePendingIntentionalDisconnect(): boolean {
-  const val = pendingIntentionalDisconnect;
-  pendingIntentionalDisconnect = false;
-  return val;
+/** createBot() の先頭で呼び出す — 二重接続を防ぐ */
+export function setBotConnecting(): void {
+  isConnecting = true;
+}
+
+/**
+ * bot の end イベントで呼び出す。
+ * botRef が渡された bot と同一の場合のみクリアし、
+ * 常に isConnecting をリセットする。
+ */
+export function clearBotRef(bot: Bot): void {
+  if (botRef === bot) {
+    botRef = null;
+  }
+  isConnecting = false;
 }
 
 export function setBotConnected(connected: boolean): void {
   isBotConnected = connected;
+  if (connected) isConnecting = false;
   broadcast({ type: "botConnection", connected });
 }
 
@@ -111,14 +123,13 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
   if (msg.type === "disconnect") {
     if (botRef && isBotConnected) {
-      pendingIntentionalDisconnect = true;
       botRef.end("disconnected by user");
     }
     return;
   }
 
   if (msg.type === "reconnect") {
-    if (!isBotConnected) {
+    if (!isBotConnected && !isConnecting) {
       reconnectCallback?.();
     }
     return;
@@ -137,14 +148,13 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
     if (isBotConnected && botRef) {
       // 現在接続中 → 切断して再接続
-      pendingIntentionalDisconnect = true;
       const currentBot = botRef;
       currentBot.once("end", () => {
         reconnectCallback?.();
       });
       currentBot.end("credentials updated");
-    } else {
-      // 未接続 → そのまま接続
+    } else if (!isConnecting) {
+      // 未接続かつ接続中でない → そのまま接続
       reconnectCallback?.();
     }
     return;
@@ -166,13 +176,12 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     broadcast({ type: "credentialsInfo", hasCredentials: true, username });
 
     if (isBotConnected && botRef) {
-      pendingIntentionalDisconnect = true;
       const currentBot = botRef;
       currentBot.once("end", () => {
         reconnectCallback?.();
       });
       currentBot.end("account switched");
-    } else {
+    } else if (!isConnecting) {
       reconnectCallback?.();
     }
     return;
@@ -193,7 +202,6 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
       clearCredentials();
       broadcast({ type: "credentialsInfo", hasCredentials: false, username: null });
       if (isBotConnected && botRef) {
-        pendingIntentionalDisconnect = true;
         botRef.end("account removed");
       }
     }
@@ -210,7 +218,6 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
     // Botが接続中なら切断
     if (isBotConnected && botRef) {
-      pendingIntentionalDisconnect = true;
       botRef.end("logged out");
     }
     return;

@@ -74,6 +74,7 @@ export default function HomePage() {
         onOpenSettings={() => setSettingsOpen(true)}
         currentUsername={ws.currentUsername}
         accounts={ws.accounts}
+        kickReason={ws.kickReason}
         onLogout={ws.actions.sendLogout}
         onSwitchAccount={ws.actions.sendSwitchAccount}
         onRemoveAccount={ws.actions.sendRemoveAccount}
