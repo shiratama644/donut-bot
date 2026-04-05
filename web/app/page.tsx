@@ -47,6 +47,10 @@ export default function HomePage() {
       <Header
         position={position}
         connected={ws.connected}
+        botConnected={ws.botConnected}
+        onToggleConnection={() =>
+          ws.botConnected ? ws.actions.sendDisconnect() : ws.actions.sendReconnect()
+        }
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenStatus={() => setStatusOpen(true)}

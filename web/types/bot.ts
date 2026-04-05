@@ -45,7 +45,12 @@ export interface BotStatusMessage {
   ping: number;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage;
+export interface BotConnectionMessage {
+  type: "botConnection";
+  connected: boolean;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage;
 
 export interface Position {
   x: number;

@@ -6,13 +6,15 @@ import type { Theme } from "@/hooks/useTheme";
 interface Props {
   position: Position | null;
   connected: boolean;
+  botConnected: boolean;
+  onToggleConnection: () => void;
   theme: Theme;
   onToggleTheme: () => void;
   onOpenStatus: () => void;
   onOpenSettings: () => void;
 }
 
-export default function Header({ position, connected, theme, onToggleTheme, onOpenStatus, onOpenSettings }: Props) {
+export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings }: Props) {
   const fmt = (n: number) => n.toFixed(1);
 
   return (
@@ -41,20 +43,23 @@ export default function Header({ position, connected, theme, onToggleTheme, onOp
         </div>
       )}
 
-      <div
+      <button
+        type="button"
         className="app-header__status-badge"
-        aria-label={connected ? "接続中" : "切断中"}
-        title={connected ? "接続中" : "切断中"}
+        onClick={onToggleConnection}
+        disabled={!connected}
+        aria-label={botConnected ? "クリックして切断" : "クリックして再接続"}
+        title={botConnected ? "クリックして切断" : "クリックして再接続"}
       >
         <span
           className={`app-header__status-dot ${
-            connected
+            botConnected
               ? "app-header__status-dot--online"
               : "app-header__status-dot--offline"
           }`}
         />
-        {connected ? "Online" : "Offline"}
-      </div>
+        {botConnected ? "Online" : "Offline"}
+      </button>
 
       <button
         type="button"

@@ -2,7 +2,7 @@ import mineflayer, { Bot } from "mineflayer";
 import { CONFIG, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
-import { startWebSocketServer } from "./websocketServer.js";
+import { startWebSocketServer, takePendingIntentionalDisconnect, setBotConnected } from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
@@ -20,6 +20,7 @@ export function createBot(): Bot {
   bot.once("spawn", () => {
     log.info("スポーン完了。");
     startWebSocketServer(bot);
+    setBotConnected(true);
     coordTimer = startCoordDisplay(bot);
     stopStatus = startStatusBroadcast(bot);
   });
@@ -44,7 +45,12 @@ export function createBot(): Bot {
     if (stopStatus) stopStatus();
     process.stdout.write("\n");
     log.warn(`切断 — 理由: ${reason}`);
-    process.exit(0);
+    if (takePendingIntentionalDisconnect()) {
+      // 意図的な切断 — プロセスを終了せず再接続コマンドを待つ
+      setBotConnected(false);
+    } else {
+      process.exit(0);
+    }
   });
 
   return bot;
