@@ -38,11 +38,41 @@ cp .env.example .env
 |--------|------|------|
 | `HOST` | ✅ | 接続先 Minecraft サーバーのホスト名（例: `donutsmp.net`） |
 | `PORT` | | Minecraft サーバーのポート番号（デフォルト: `25565`） |
-| `BOT_USERNAME` | ✅ | Bot のユーザー名 |
+| `BOT_USERNAME` | ✅ | Bot の Microsoft アカウントのメールアドレス |
+| `BOT_PASSWORD` | | Bot の Microsoft アカウントのパスワード（後述「認証方法」を参照） |
 | `AUTH` | ✅ | 認証方式: `microsoft` または `offline` |
 | `VERSION` | | Minecraft のバージョン（例: `1.21.1`）。サーバーに合わせて設定 |
 | `WEB_PORT` | | Bot WebSocket サーバーのポート番号（デフォルト: `3000`） |
 | `NEXT_PUBLIC_WS_URL` | | Web UI から接続する WebSocket の URL（例: `ws://localhost:3000`）。本番環境では必ず設定 |
+
+---
+
+## 認証方法（`AUTH=microsoft` の場合）
+
+### パスワード認証（推奨・自動ログイン）
+
+`.env` に `BOT_PASSWORD` を設定すると、毎回コードを入力せず自動でログインできます。
+
+```env
+BOT_USERNAME=your_email@example.com
+BOT_PASSWORD=your_password
+AUTH=microsoft
+```
+
+> **注意**: 2要素認証（2FA/MFA）が有効なアカウントでは使用できません。2FA が有効な場合はデバイスコード認証を使用してください。
+
+**`BOT_USERNAME` を変えると？** → キャッシュが別ユーザーのものに切り替わり、新しいユーザーで自動的にパスワード認証が走ります。
+
+### デバイスコード認証（2FA 対応）
+
+`BOT_PASSWORD` を設定しない場合、初回起動時にターミナルへ以下のメッセージが表示されます。
+
+```
+[msa] First time signing in. Please authenticate now:
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code XXXXXXXX to authenticate.
+```
+
+ブラウザで URL を開き、コードを入力して認証してください。認証後はトークンがプロジェクト内の `.cache/` に保存されるため、以降の起動ではコード入力は不要です（トークン有効期限が切れるまで）。
 
 ---
 
