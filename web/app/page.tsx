@@ -80,6 +80,7 @@ export default function HomePage() {
         onLogout={ws.actions.sendLogout}
         onSwitchAccount={ws.actions.sendSwitchAccount}
         onRemoveAccount={ws.actions.sendRemoveAccount}
+        onReauthAccount={ws.actions.sendReauthAccount}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
       <StatusPanel

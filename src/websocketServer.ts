@@ -6,7 +6,7 @@ import { log, emit, ts } from "./logger.js";
 import { broadcast, setWss } from "./broadcast.js";
 import { setStatusIntervalMs } from "./status.js";
 import { saveCredentials, getCredentials, clearCredentials } from "./credentials.js";
-import { getAccountUsernames, getAccountCredentials, removeAccount } from "./accounts.js";
+import { getAccountEntries, getAccountCredentials, removeAccount, clearAccountProfileCache } from "./accounts.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -42,6 +42,13 @@ export function setBotConnected(connected: boolean): void {
   broadcast({ type: "botConnection", connected });
 }
 
+/** MCID 不一致などの内部的な切断後に再接続を要求する */
+export function requestReconnect(): void {
+  if (!isConnecting && !isBotConnected) {
+    reconnectCallback?.();
+  }
+}
+
 // ─── WebSocket サーバー初期化（Bot なしで起動可能）────────
 export function initWebSocketServer(): void {
   if (serverStarted) return;
@@ -69,10 +76,10 @@ export function initWebSocketServer(): void {
       username: creds?.username ?? null,
     }));
 
-    // 接続時に保存済みアカウント一覧を送る（ユーザー名のみ）
+    // 接続時に保存済みアカウント一覧を送る（ユーザー名と MCID）
     ws.send(JSON.stringify({
       type: "accountsList",
-      usernames: getAccountUsernames(),
+      accounts: getAccountEntries(),
     }));
 
     // 接続時に現在の座標を送る
@@ -144,7 +151,7 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
     // 全クライアントに更新を通知
     broadcast({ type: "credentialsInfo", hasCredentials: true, username });
-    broadcast({ type: "accountsList", usernames: getAccountUsernames() });
+    broadcast({ type: "accountsList", accounts: getAccountEntries() });
 
     if (isBotConnected && botRef) {
       // 現在接続中 → 切断して再接続
@@ -192,9 +199,11 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
     if (!username) return;
 
     removeAccount(username);
+    // アカウント削除時にトークンキャッシュも削除し、再登録時に正しい認証を強制する
+    clearAccountProfileCache(username);
     log.info(`アカウントを削除しました — ユーザー名: ${username}`);
 
-    broadcast({ type: "accountsList", usernames: getAccountUsernames() });
+    broadcast({ type: "accountsList", accounts: getAccountEntries() });
 
     // 削除対象がアクティブアカウントの場合はログアウト
     const creds = getCredentials();
@@ -204,6 +213,35 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
       if (isBotConnected && botRef) {
         botRef.end("account removed");
       }
+    }
+    return;
+  }
+
+  if (msg.type === "reauthAccount") {
+    const username = typeof msg.username === "string" ? msg.username.trim() : "";
+    if (!username) return;
+
+    const savedCreds = getAccountCredentials(username);
+    if (!savedCreds) {
+      log.warn(`reauthAccount: アカウントが見つかりません — ${username}`);
+      return;
+    }
+
+    // トークンキャッシュを削除して MSA 再認証を強制する
+    clearAccountProfileCache(username);
+    log.info(`再認証のためトークンキャッシュをクリアしました — ユーザー名: ${username}`);
+
+    saveCredentials(savedCreds);
+    broadcast({ type: "credentialsInfo", hasCredentials: true, username });
+
+    if (isBotConnected && botRef) {
+      const currentBot = botRef;
+      currentBot.once("end", () => {
+        reconnectCallback?.();
+      });
+      currentBot.end("reauthenticating");
+    } else if (!isConnecting) {
+      reconnectCallback?.();
     }
     return;
   }

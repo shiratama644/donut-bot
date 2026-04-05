@@ -404,6 +404,49 @@ body {
   background: var(--bg-surface-2);
 }
 
+.app-header__account-row-mcid {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.app-header__account-row-reauth {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), background var(--transition);
+  margin-right: 2px;
+}
+
+.app-header__account-row-reauth .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.app-header__account-row-reauth:hover {
+  color: var(--c-blue, #4a90d9);
+  background: var(--bg-surface-2);
+}
+
+.app-header__account-reauth-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: left;
+  width: auto;
+  height: auto;
+}
+
 .app-header__account-divider {
   height: 1px;
   background: var(--border);

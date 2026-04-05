@@ -64,7 +64,7 @@ export interface CredentialsInfoMessage {
 
 export interface AccountsListMessage {
   type: "accountsList";
-  usernames: string[];
+  accounts: { username: string; mcid?: string }[];
 }
 
 export interface MsaCodeMessage {
@@ -77,7 +77,13 @@ export interface MsaCodeClearedMessage {
   type: "msaCodeCleared";
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage;
+export interface WrongMcidMessage {
+  type: "wrongMcid";
+  expected: string;
+  actual: string;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | WrongMcidMessage;
 
 export interface Position {
   x: number;

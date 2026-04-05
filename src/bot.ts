@@ -2,10 +2,12 @@ import mineflayer, { Bot } from "mineflayer";
 import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
-import { startWebSocketServer, setBotConnected, clearBotRef, setBotConnecting } from "./websocketServer.js";
+import { startWebSocketServer, setBotConnected, clearBotRef, setBotConnecting, requestReconnect } from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
+import { getCredentials } from "./credentials.js";
+import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
 
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
@@ -26,8 +28,27 @@ export function createBot(): Bot {
   let coordTimer: ReturnType<typeof setInterval> | null = null;
   let stopStatus: (() => void) | null = null;
 
-  bot.once("login", () =>
-    log.info(`ログイン成功 — ユーザー名: ${bot.username}  EntityId: ${bot.entity?.id ?? "?"}`));
+  bot.once("login", () => {
+    const mcid = bot.username;
+    const creds = getCredentials();
+    if (creds?.username) {
+      const stored = getAccountEntry(creds.username);
+      if (stored?.mcid && stored.mcid !== mcid) {
+        // キャッシュされたトークンが別アカウントのもの — キャッシュを削除して再認証する
+        log.warn(
+          `MCID 不一致 — 期待値: ${stored.mcid}, 実際: ${mcid}` +
+          ` — トークンキャッシュをクリアして再認証します`,
+        );
+        broadcast({ type: "wrongMcid", expected: stored.mcid, actual: mcid });
+        clearAccountProfileCache(creds.username);
+        setTimeout(() => bot.end("wrong mcid - reauthenticating"), 0);
+        return;
+      }
+      updateAccountMcid(creds.username, mcid);
+      broadcast({ type: "accountsList", accounts: getAccountEntries() });
+    }
+    log.info(`ログイン成功 — ユーザー名: ${mcid}  EntityId: ${bot.entity?.id ?? "?"}`);
+  });
 
   bot.once("spawn", () => {
     log.info("スポーン完了。");
@@ -79,6 +100,10 @@ export function createBot(): Bot {
     broadcast({ type: "msaCodeCleared" });
     // 意図的な切断（switchAccount / setCredentials）は once("end") リスナーが再接続を担当する。
     // 非意図的な切断（キック等）はユーザーが手動で Online ボタンを押して再接続する。
+    // MCID 不一致による切断はキャッシュクリア後に自動再接続して正しいアカウントで認証し直す。
+    if (reason === "wrong mcid - reauthenticating") {
+      requestReconnect();
+    }
   });
 
   return bot;
