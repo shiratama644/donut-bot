@@ -1,5 +1,5 @@
 import mineflayer, { Bot } from "mineflayer";
-import { CONFIG, MOVE_THROTTLE_MS } from "./config.js";
+import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
 import { startWebSocketServer, takePendingIntentionalDisconnect, setBotConnected } from "./websocketServer.js";
@@ -9,8 +9,9 @@ import { startStatusBroadcast } from "./status.js";
 
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
-  log.info(`接続中… host=${CONFIG.host} version=${CONFIG.version} auth=${CONFIG.auth}`);
-  const bot = mineflayer.createBot(CONFIG);
+  const config = getConfig();
+  log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
+  const bot = mineflayer.createBot(config);
   let coordTimer: ReturnType<typeof setInterval> | null = null;
   let stopStatus: (() => void) | null = null;
 

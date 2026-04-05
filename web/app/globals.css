@@ -845,6 +845,221 @@ body {
   margin-top: 2px;
 }
 
+/* ─── Login Overlay ───────────────────────────────────── */
+
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-app);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+}
+
+.login-card__logo {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.login-card__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.login-card__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 28px;
+  text-align: center;
+}
+
+.login-card__form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-card__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.login-card__input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
+
+.login-card__input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.login-card__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-card__hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.login-card__submit {
+  width: 100%;
+  height: 44px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity var(--transition);
+  margin-top: 4px;
+}
+
+.login-card__submit:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.login-card__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.login-card__spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Settings Panel – Credentials Section ───────────── */
+
+.settings-panel__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+.settings-panel__creds-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-panel__creds-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.settings-panel__creds-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.settings-panel__creds-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
+
+.settings-panel__creds-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.settings-panel__creds-btn {
+  width: 100%;
+  height: 36px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity var(--transition);
+  margin-top: 2px;
+}
+
+.settings-panel__creds-btn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.settings-panel__creds-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-panel__creds-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
 
 
 .material-symbols-outlined {

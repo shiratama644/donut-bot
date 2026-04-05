@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
 import StatusPanel from "@/components/StatusPanel";
 import SettingsPanel from "@/components/SettingsPanel";
+import LoginPanel from "@/components/LoginPanel";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
 import { useTheme } from "@/hooks/useTheme";
 import type { Position, BotStatusMessage } from "@/types/bot";
@@ -49,6 +50,15 @@ export default function HomePage() {
     ws.actions.sendSetInterval(ms);
   }
 
+  // 認証情報が未設定の場合はログイン画面を表示
+  if (ws.hasCredentials === false) {
+    return (
+      <LoginPanel
+        onSubmit={(username, password) => ws.actions.sendSetCredentials(username, password)}
+      />
+    );
+  }
+
   return (
     <div className="app-root">
       <Header
@@ -75,6 +85,8 @@ export default function HomePage() {
         onClose={() => setSettingsOpen(false)}
         intervalMs={intervalMs}
         onIntervalChange={handleIntervalChange}
+        currentUsername={ws.currentUsername}
+        onSetCredentials={(username, password) => ws.actions.sendSetCredentials(username, password)}
       />
     </div>
   );

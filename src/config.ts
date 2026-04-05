@@ -1,18 +1,24 @@
 import path from "path";
+import { getCredentials } from "./credentials.js";
 
 // ─── 設定 ────────────────────────────────────────────────
-export const CONFIG = {
-  host:           process.env.HOST     ?? "donutsmp.net",
-  port:           Number(process.env.PORT ?? 25565),
-  username:       process.env.BOT_USERNAME ?? (() => { throw new Error(".env に BOT_USERNAME が未設定です"); })(),
-  auth:           (process.env.AUTH    ?? "microsoft") as "microsoft" | "offline",
-  version:        process.env.VERSION  ?? "1.21.1",
-  // Microsoft 認証: パスワードを設定するとデバイスコード入力なしで自動ログインできる
-  // （2要素認証が無効なアカウントのみ対応）
-  password:       process.env.BOT_PASSWORD || undefined,
-  // 認証トークンのキャッシュ先（デフォルト: プロジェクトルートの .cache/）
-  profilesFolder: process.env.PROFILES_FOLDER ?? path.join(process.cwd(), ".cache"),
-} as const;
+
+/** createBot() を呼ぶたびに最新の認証情報でコンフィグを組み立てて返す */
+export function getConfig() {
+  const creds = getCredentials();
+  if (!creds) throw new Error("認証情報が設定されていません。Web UI でアカウント情報を入力してください。");
+  return {
+    host:           process.env.HOST     ?? "donutsmp.net",
+    port:           Number(process.env.PORT ?? 25565),
+    username:       creds.username,
+    auth:           (process.env.AUTH    ?? "microsoft") as "microsoft" | "offline",
+    version:        process.env.VERSION  ?? "1.21.1",
+    // パスワードを設定するとデバイスコード入力なしで自動ログインできる（2FA非対応）
+    password:       creds.password,
+    // 認証トークンのキャッシュ先（デフォルト: プロジェクトルートの .cache/）
+    profilesFolder: process.env.PROFILES_FOLDER ?? path.join(process.cwd(), ".cache"),
+  };
+}
 
 export const WEB_PORT = Number(process.env.WEB_PORT ?? 3000);
 

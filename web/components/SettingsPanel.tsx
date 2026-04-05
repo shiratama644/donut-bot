@@ -1,13 +1,36 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 interface Props {
   open: boolean;
   onClose: () => void;
   intervalMs: number;
   onIntervalChange: (ms: number) => void;
+  currentUsername: string | null;
+  onSetCredentials: (username: string, password: string) => void;
 }
 
-export default function SettingsPanel({ open, onClose, intervalMs, onIntervalChange }: Props) {
+export default function SettingsPanel({ open, onClose, intervalMs, onIntervalChange, currentUsername, onSetCredentials }: Props) {
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  // パネルを開くたびに現在のユーザー名をプリフィル
+  useEffect(() => {
+    if (open) {
+      setNewUsername(currentUsername ?? "");
+      setNewPassword("");
+    }
+  }, [open, currentUsername]);
+
+  function handleSaveCredentials(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newUsername.trim()) return;
+    onSetCredentials(newUsername.trim(), newPassword);
+    setNewPassword("");
+    onClose();
+  }
+
   return (
     <>
       {open && (
@@ -56,6 +79,48 @@ export default function SettingsPanel({ open, onClose, intervalMs, onIntervalCha
             <span>10 ms</span>
             <span>5000 ms</span>
           </div>
+
+          <div className="settings-panel__divider" />
+
+          <div className="settings-panel__section-title">アカウント</div>
+          <form className="settings-panel__creds-form" onSubmit={handleSaveCredentials}>
+            <div className="settings-panel__creds-field">
+              <label className="settings-panel__creds-label" htmlFor="settings-username">
+                メールアドレス
+              </label>
+              <input
+                id="settings-username"
+                type="email"
+                className="settings-panel__creds-input"
+                placeholder="your@email.com"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                autoComplete="username"
+              />
+            </div>
+            <div className="settings-panel__creds-field">
+              <label className="settings-panel__creds-label" htmlFor="settings-password">
+                パスワード
+              </label>
+              <input
+                id="settings-password"
+                type="password"
+                className="settings-panel__creds-input"
+                placeholder="（変更する場合のみ入力）"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <button
+              type="submit"
+              className="settings-panel__creds-btn"
+              disabled={!newUsername.trim()}
+            >
+              <span className="material-symbols-outlined">sync</span>
+              保存して再接続
+            </button>
+          </form>
         </div>
       </aside>
     </>
