@@ -17,16 +17,37 @@ import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
 import { getCredentials } from "./credentials.js";
 import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
+import { getAuthState, setAuthState } from "./authState.js";
 
 function createSessionId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function resolveAuthSession(username: string): string {
+  const current = getAuthState();
+  if (
+    current.username === username &&
+    current.sessionId &&
+    (current.state === "AUTHENTICATING" || current.state === "REAUTH_REQUIRED")
+  ) {
+    setAuthState({
+      state: "AUTHENTICATING",
+      username,
+      sessionId: current.sessionId,
+      nextRetryAt: null,
+      reason: current.reason,
+    });
+    return current.sessionId;
+  }
+  const sessionId = createSessionId();
+  beginAuthLifecycle(username, sessionId);
+  return sessionId;
+}
+
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
   const config = getConfig();
-  const sessionId = createSessionId();
-  beginAuthLifecycle(config.username, sessionId);
+  const sessionId = resolveAuthSession(config.username);
   setBotConnecting();
   log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
   const bot = mineflayer.createBot({
