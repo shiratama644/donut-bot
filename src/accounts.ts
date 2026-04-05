@@ -4,7 +4,6 @@ import type { Credentials } from "./credentials.js";
 
 export interface AccountEntry {
   username: string;
-  password?: string;
 }
 
 const ACCOUNTS_PATH = path.join(process.cwd(), ".cache", "accounts.json");
@@ -39,7 +38,7 @@ export function saveAccounts(accounts: AccountEntry[]): void {
 export function addOrUpdateAccount(creds: Credentials): void {
   const accounts = loadAccounts();
   const idx = accounts.findIndex((a) => a.username === creds.username);
-  const entry: AccountEntry = { username: creds.username, password: creds.password };
+  const entry: AccountEntry = { username: creds.username };
   if (idx >= 0) {
     accounts[idx] = entry;
   } else {
@@ -54,13 +53,13 @@ export function removeAccount(username: string): void {
   saveAccounts(accounts);
 }
 
-/** 保存済みアカウントのユーザー名一覧を返す（パスワードは含まない） */
+/** 保存済みアカウントのユーザー名一覧を返す */
 export function getAccountUsernames(): string[] {
   return loadAccounts().map((a) => a.username);
 }
 
-/** 保存済みアカウントの認証情報を返す（パスワードを含む） */
+/** 保存済みアカウントの認証情報を返す */
 export function getAccountCredentials(username: string): Credentials | null {
   const entry = loadAccounts().find((a) => a.username === username);
-  return entry ? { username: entry.username, password: entry.password } : null;
+  return entry ? { username: entry.username } : null;
 }

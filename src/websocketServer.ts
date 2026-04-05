@@ -126,13 +126,12 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
   if (msg.type === "setCredentials") {
     const username = typeof msg.username === "string" ? msg.username.trim() : "";
-    const password = typeof msg.password === "string" ? msg.password : "";
     if (!username) return;
 
-    saveCredentials({ username, password: password || undefined });
+    saveCredentials({ username });
     log.info(`認証情報を更新しました — ユーザー名: ${username}`);
 
-    // 全クライアントに更新を通知（パスワードは送らない）
+    // 全クライアントに更新を通知
     broadcast({ type: "credentialsInfo", hasCredentials: true, username });
     broadcast({ type: "accountsList", usernames: getAccountUsernames() });
 

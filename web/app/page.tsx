@@ -54,7 +54,7 @@ export default function HomePage() {
   if (ws.hasCredentials === false) {
     return (
       <LoginPanel
-        onSubmit={(username, password) => ws.actions.sendSetCredentials(username, password)}
+        onSubmit={(username) => ws.actions.sendSetCredentials(username)}
       />
     );
   }
@@ -91,7 +91,7 @@ export default function HomePage() {
         intervalMs={intervalMs}
         onIntervalChange={handleIntervalChange}
         currentUsername={ws.currentUsername}
-        onSetCredentials={(username, password) => ws.actions.sendSetCredentials(username, password)}
+        onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
       />
     </div>
   );

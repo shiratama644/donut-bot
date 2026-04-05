@@ -4,7 +4,6 @@ import { addOrUpdateAccount } from "./accounts.js";
 
 export interface Credentials {
   username: string;
-  password?: string;
 }
 
 const CREDS_PATH = path.join(process.cwd(), ".cache", "credentials.json");
@@ -17,17 +16,14 @@ let _credentials: Credentials | null = null;
  */
 export function loadCredentials(): Credentials | null {
   if (process.env.BOT_USERNAME) {
-    _credentials = {
-      username: process.env.BOT_USERNAME,
-      password: process.env.BOT_PASSWORD || undefined,
-    };
+    _credentials = { username: process.env.BOT_USERNAME };
     return _credentials;
   }
   try {
     const raw = fs.readFileSync(CREDS_PATH, "utf-8");
     const data = JSON.parse(raw) as Credentials;
     if (typeof data.username === "string" && data.username.trim()) {
-      _credentials = { username: data.username, password: data.password || undefined };
+      _credentials = { username: data.username };
       return _credentials;
     }
   } catch {

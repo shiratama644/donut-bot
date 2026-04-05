@@ -3,19 +3,18 @@
 import { useState } from "react";
 
 interface Props {
-  onSubmit: (username: string, password: string) => void;
+  onSubmit: (username: string) => void;
 }
 
 export default function LoginPanel({ onSubmit }: Props) {
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || submitting) return;
     setSubmitting(true);
-    onSubmit(username.trim(), password);
+    onSubmit(username.trim());
   }
 
   return (
@@ -40,23 +39,8 @@ export default function LoginPanel({ onSubmit }: Props) {
               autoComplete="username"
               disabled={submitting}
             />
-          </div>
-          <div className="login-card__field">
-            <label className="login-card__label" htmlFor="login-password">
-              パスワード
-            </label>
-            <input
-              id="login-password"
-              type="password"
-              className="login-card__input"
-              placeholder="パスワード（省略可 — デバイスコード認証）"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              disabled={submitting}
-            />
             <p className="login-card__hint">
-              省略するとデバイスコード認証になります（2FA対応）
+              入力後、ターミナルに表示されるデバイスコードをブラウザで入力してください
             </p>
           </div>
           <button

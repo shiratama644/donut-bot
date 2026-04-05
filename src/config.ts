@@ -13,8 +13,7 @@ export function getConfig() {
     username:       creds.username,
     auth:           (process.env.AUTH    ?? "microsoft") as "microsoft" | "offline",
     version:        process.env.VERSION  ?? "1.21.1",
-    // パスワードを設定するとデバイスコード入力なしで自動ログインできる（2FA非対応）
-    password:       creds.password,
+    // パスワードを渡さないことでデバイスコードフロー（ブラウザ認証）を使用する
     // 認証トークンのキャッシュ先（デフォルト: プロジェクトルートの .cache/）
     profilesFolder: process.env.PROFILES_FOLDER ?? path.join(process.cwd(), ".cache"),
   };

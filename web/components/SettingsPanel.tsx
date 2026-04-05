@@ -8,26 +8,23 @@ interface Props {
   intervalMs: number;
   onIntervalChange: (ms: number) => void;
   currentUsername: string | null;
-  onSetCredentials: (username: string, password: string) => void;
+  onSetCredentials: (username: string) => void;
 }
 
 export default function SettingsPanel({ open, onClose, intervalMs, onIntervalChange, currentUsername, onSetCredentials }: Props) {
   const [newUsername, setNewUsername] = useState("");
-  const [newPassword, setNewPassword] = useState("");
 
   // パネルを開くたびに現在のユーザー名をプリフィル
   useEffect(() => {
     if (open) {
       setNewUsername(currentUsername ?? "");
-      setNewPassword("");
     }
   }, [open, currentUsername]);
 
   function handleSaveCredentials(e: React.FormEvent) {
     e.preventDefault();
     if (!newUsername.trim()) return;
-    onSetCredentials(newUsername.trim(), newPassword);
-    setNewPassword("");
+    onSetCredentials(newUsername.trim());
     onClose();
   }
 
@@ -96,20 +93,6 @@ export default function SettingsPanel({ open, onClose, intervalMs, onIntervalCha
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
                 autoComplete="username"
-              />
-            </div>
-            <div className="settings-panel__creds-field">
-              <label className="settings-panel__creds-label" htmlFor="settings-password">
-                パスワード
-              </label>
-              <input
-                id="settings-password"
-                type="password"
-                className="settings-panel__creds-input"
-                placeholder="（変更する場合のみ入力）"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="current-password"
               />
             </div>
             <button
