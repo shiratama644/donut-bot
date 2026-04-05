@@ -25,6 +25,8 @@ export interface BotWebSocketState {
   accounts: string[];
   /** 最後にキックされた理由。再接続成功時にリセットされる */
   kickReason: string | null;
+  /** Microsoft デバイスコード認証が必要な場合のデータ */
+  msaCode: { userCode: string; verificationUri: string } | null;
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -37,6 +39,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<string[]>([]);
   const [kickReason, setKickReason] = useState<string | null>(null);
+  const [msaCode, setMsaCode] = useState<{ userCode: string; verificationUri: string } | null>(null);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -86,6 +89,14 @@ export function useBotWebSocket(url: string): BotWebSocketState {
         }
         if (msg.type === "accountsList") {
           setAccounts(msg.usernames);
+          return;
+        }
+        if (msg.type === "msaCode") {
+          setMsaCode({ userCode: msg.userCode, verificationUri: msg.verificationUri });
+          return;
+        }
+        if (msg.type === "msaCodeCleared") {
+          setMsaCode(null);
           return;
         }
         handlersRef.current.forEach((h) => h(msg));
@@ -154,6 +165,6 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount],
   );
 
-  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, actions, onMessage };
+  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, msaCode, actions, onMessage };
 }
 

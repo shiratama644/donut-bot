@@ -67,7 +67,17 @@ export interface AccountsListMessage {
   usernames: string[];
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage;
+export interface MsaCodeMessage {
+  type: "msaCode";
+  userCode: string;
+  verificationUri: string;
+}
+
+export interface MsaCodeClearedMessage {
+  type: "msaCodeCleared";
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage;
 
 export interface Position {
   x: number;

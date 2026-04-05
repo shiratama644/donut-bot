@@ -6,6 +6,7 @@ import ChatPanel from "@/components/ChatPanel";
 import StatusPanel from "@/components/StatusPanel";
 import SettingsPanel from "@/components/SettingsPanel";
 import LoginPanel from "@/components/LoginPanel";
+import MsaCodeDisplay from "@/components/MsaCodeDisplay";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
 import { useTheme } from "@/hooks/useTheme";
 import type { Position, BotStatusMessage } from "@/types/bot";
@@ -55,6 +56,7 @@ export default function HomePage() {
     return (
       <LoginPanel
         onSubmit={(username) => ws.actions.sendSetCredentials(username)}
+        msaCode={ws.msaCode}
       />
     );
   }
@@ -94,6 +96,17 @@ export default function HomePage() {
         currentUsername={ws.currentUsername}
         onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
       />
+      {ws.msaCode && (
+        <div className="msa-code-overlay">
+          <div className="msa-code-card">
+            <MsaCodeDisplay
+              userCode={ws.msaCode.userCode}
+              verificationUri={ws.msaCode.verificationUri}
+              variant="overlay"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

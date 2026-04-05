@@ -1211,6 +1211,13 @@ body {
   font-size: 16px;
 }
 
+.settings-panel__creds-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
 
 
 .material-symbols-outlined {
@@ -1305,4 +1312,128 @@ input::-webkit-credentials-auto-fill-button {
   .app-header__title {
     font-size: 13px;
   }
+}
+
+/* ─── Microsoft Device Code Display ──────────────────── */
+
+.msa-code-box {
+  width: 100%;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.msa-code-box__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0;
+}
+
+.msa-code-box__step {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.msa-code-box__link {
+  color: var(--c-cyan);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.msa-code-box__code {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 0;
+  text-align: center;
+  user-select: all;
+}
+
+.msa-code-box__note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Overlay shown when a logged-in user re-authenticates */
+.msa-code-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 20px;
+}
+
+.msa-code-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+}
+
+.msa-code-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msa-code-card__title .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.msa-code-card__step {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.msa-code-card__link {
+  color: var(--c-cyan);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.msa-code-card__code {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 0;
+  text-align: center;
+  user-select: all;
+}
+
+.msa-code-card__note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
 }

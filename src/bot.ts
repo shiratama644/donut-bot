@@ -12,7 +12,17 @@ export function createBot(): Bot {
   const config = getConfig();
   setBotConnecting();
   log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
-  const bot = mineflayer.createBot(config);
+  const bot = mineflayer.createBot({
+    ...config,
+    // Microsoft デバイスコードフローのコールバック。
+    // 新しいアカウントの認証時にコードと URL を Web UI へ通知する。
+    onMsaCode: (data: { user_code: string; verification_uri: string }) => {
+      log.info(
+        `Microsoft 認証が必要です — ${data.verification_uri} にアクセスしてコード ${data.user_code} を入力してください`,
+      );
+      broadcast({ type: "msaCode", userCode: data.user_code, verificationUri: data.verification_uri });
+    },
+  } as Parameters<typeof mineflayer.createBot>[0]);
   let coordTimer: ReturnType<typeof setInterval> | null = null;
   let stopStatus: (() => void) | null = null;
 
@@ -65,6 +75,8 @@ export function createBot(): Bot {
     log.warn(`切断 — 理由: ${reason}`);
     clearBotRef(bot);
     setBotConnected(false);
+    // デバイスコード表示をクリアする（ログイン前に切断された場合もクリア）
+    broadcast({ type: "msaCodeCleared" });
     // 意図的な切断（switchAccount / setCredentials）は once("end") リスナーが再接続を担当する。
     // 非意図的な切断（キック等）はユーザーが手動で Online ボタンを押して再接続する。
   });
