@@ -438,7 +438,6 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
   padding: 9px 14px;
   font-size: 13px;
   color: var(--text-muted);
