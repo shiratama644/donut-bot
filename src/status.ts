@@ -1,7 +1,12 @@
 import { Bot } from "mineflayer";
 import { broadcast } from "./broadcast.js";
 
-const STATUS_INTERVAL_MS = 2000;
+const DEFAULT_INTERVAL_MS = 2000;
+
+// ─── インターバル管理 ──────────────────────────────────────
+let statusHandle: ReturnType<typeof setInterval> | null = null;
+let currentBot: Bot | null = null;
+let currentIntervalMs = DEFAULT_INTERVAL_MS;
 
 // 最後に有効だった値をキャッシュし、一時的に undefined になっても 0 へ戻らないようにする
 let cache = {
@@ -32,7 +37,25 @@ function broadcastStatus(bot: Bot): void {
   broadcast({ type: "status", ...cache });
 }
 
+// ─── インターバル変更 ─────────────────────────────────────
+export function setStatusIntervalMs(ms: number): void {
+  currentIntervalMs = Math.max(10, Math.min(5000, ms));
+  if (statusHandle !== null) {
+    clearInterval(statusHandle);
+    if (currentBot) {
+      statusHandle = setInterval(() => broadcastStatus(currentBot!), currentIntervalMs);
+    }
+  }
+}
+
 // ─── Status ブロードキャスト ──────────────────────────────
-export function startStatusBroadcast(bot: Bot): ReturnType<typeof setInterval> {
-  return setInterval(() => broadcastStatus(bot), STATUS_INTERVAL_MS);
+export function startStatusBroadcast(bot: Bot): () => void {
+  currentBot = bot;
+  statusHandle = setInterval(() => broadcastStatus(bot), currentIntervalMs);
+  return () => {
+    if (statusHandle !== null) {
+      clearInterval(statusHandle);
+      statusHandle = null;
+    }
+  };
 }

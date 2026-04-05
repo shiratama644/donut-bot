@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
 import StatusPanel from "@/components/StatusPanel";
+import SettingsPanel from "@/components/SettingsPanel";
 import { useBotWebSocket } from "@/hooks/useBotWebSocket";
 import { useTheme } from "@/hooks/useTheme";
 import type { Position, BotStatusMessage } from "@/types/bot";
@@ -14,11 +15,15 @@ const WS_URL =
     ? `ws://${window.location.hostname}:3000`
     : "ws://localhost:3000");
 
+const DEFAULT_INTERVAL_MS = 2000;
+
 export default function HomePage() {
   const ws = useBotWebSocket(WS_URL);
   const [position, setPosition] = useState<Position | null>(null);
   const [botStatus, setBotStatus] = useState<BotStatusMessage | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [intervalMs, setIntervalMs] = useState(DEFAULT_INTERVAL_MS);
   const { theme, toggleTheme } = useTheme();
 
   const { onMessage } = ws;
@@ -32,6 +37,11 @@ export default function HomePage() {
     });
   }, [onMessage]);
 
+  function handleIntervalChange(ms: number) {
+    setIntervalMs(ms);
+    ws.actions.sendSetInterval(ms);
+  }
+
   return (
     <div className="app-root">
       <Header
@@ -40,12 +50,20 @@ export default function HomePage() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenStatus={() => setStatusOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
       <StatusPanel
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
         status={botStatus}
+        position={position}
+      />
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        intervalMs={intervalMs}
+        onIntervalChange={handleIntervalChange}
       />
     </div>
   );
