@@ -6,6 +6,7 @@ import {
   BOT_VIEWER_VIEW_DISTANCE,
   BOT_VIEWER_ENABLED,
 } from "./config.js";
+import { setViewerMode } from "./viewerState.js";
 
 type ViewerBot = Bot & {
   viewer?: {
@@ -25,7 +26,10 @@ function isCanvasModuleMissingError(err: unknown): boolean {
 }
 
 export async function startBotViewer(bot: Bot): Promise<void> {
-  if (!BOT_VIEWER_ENABLED) return;
+  if (!BOT_VIEWER_ENABLED) {
+    setViewerMode("disabled");
+    return;
+  }
 
   const viewerBot = bot as ViewerBot;
   if (activeBot === viewerBot && viewerStarted) {
@@ -61,13 +65,15 @@ export async function startBotViewer(bot: Bot): Promise<void> {
       });
       activeBot = viewerBot;
       viewerStarted = true;
+      setViewerMode("prismarine");
       log.info(
         `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
       );
     } catch (err) {
       if (isCanvasModuleMissingError(err)) {
+        setViewerMode("three");
         log.warn(
-          "Bot Viewer skipped because optional dependency 'canvas' is unavailable (fallback). Set BOT_VIEWER_ENABLED=false to disable viewer startup and suppress this warning. / Bot Viewer は 'canvas' 依存が未導入のため起動をスキップしました（フォールバック）。警告を避けるには BOT_VIEWER_ENABLED=false を設定してください。",
+          "Bot Viewer switched to viewer-via-three because optional dependency 'canvas' is unavailable. Set BOT_VIEWER_ENABLED=false to disable all viewer rendering. / 'canvas' 依存が未導入のため Bot Viewer は viewer-via-three へフォールバックしました。すべての Viewer 表示を無効化するには BOT_VIEWER_ENABLED=false を設定してください。",
         );
         return;
       }

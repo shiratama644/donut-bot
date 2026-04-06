@@ -22,6 +22,11 @@ const VIEWER_URL =
   (typeof window !== "undefined"
     ? `${window.location.protocol}//${window.location.hostname}:3002/viewer/`
     : "http://localhost:3002/viewer/");
+const THREE_VIEWER_URL =
+  process.env.NEXT_PUBLIC_THREE_VIEWER_URL ??
+  (typeof window !== "undefined"
+    ? `${window.location.protocol}//${window.location.hostname}:5173/`
+    : "http://localhost:5173/");
 
 const DEFAULT_INTERVAL_MS = 2000;
 
@@ -93,7 +98,10 @@ export default function HomePage() {
           <ChatPanel ws={ws} actions={ws.actions} />
         </section>
         <section className="app-main-split__bottom">
-          <BotViewPanel src={VIEWER_URL} />
+          <BotViewPanel
+            src={ws.viewerMode === "three" ? THREE_VIEWER_URL : VIEWER_URL}
+            visible={ws.viewerMode !== "disabled"}
+          />
         </section>
       </main>
       <StatusPanel

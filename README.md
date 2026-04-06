@@ -46,9 +46,10 @@ cp .env.example .env
 | `BOT_VIEWER_PORT` | | Bot 視点 Viewer サーバーのポート番号（デフォルト: `3002`） |
 | `BOT_VIEWER_PREFIX` | | Bot 視点 Viewer の URL プレフィックス（デフォルト: `/viewer`） |
 | `BOT_VIEWER_VIEW_DISTANCE` | | Bot 視点 Viewer の描画距離（デフォルト: `6`） |
-| `BOT_VIEWER_ENABLED` | | Bot 視点 Viewer を有効化するか（デフォルト: `true`）。Termux など `canvas` が使えない環境では `false` 推奨 |
+| `BOT_VIEWER_ENABLED` | | Bot 視点 Viewer を有効化するか（デフォルト: `true`）。`true` かつ `canvas` がない環境では `viewer-via-three` へ自動フォールバック、`false` なら Viewer は非表示 |
 | `NEXT_PUBLIC_WS_URL` | | Web UI から接続する WebSocket の URL（例: `ws://localhost:3000`）。本番環境では必ず設定 |
 | `NEXT_PUBLIC_BOT_VIEWER_URL` | | Web UI に埋め込む Bot 視点 Viewer の URL（例: `http://localhost:3002/viewer/`）。未設定時は `window.location.protocol` を使って自動解決 |
+| `NEXT_PUBLIC_THREE_VIEWER_URL` | | `viewer-via-three` を埋め込む URL（例: `http://localhost:5173/`）。未設定時は `window.location.protocol` を使って自動解決 |
 | `VITE_WS_URL` | | `viewer-via-three` から接続する WebSocket URL。未設定時は `ws(s)://<hostname>:3000` を使用 |
 
 ---

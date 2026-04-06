@@ -2,9 +2,11 @@
 
 interface Props {
   src: string;
+  visible?: boolean;
 }
 
-export default function BotViewPanel({ src }: Props) {
+export default function BotViewPanel({ src, visible = true }: Props) {
+  if (!visible) return null;
   return (
     <section className="bot-view-panel" aria-label="Bot視点">
       <div className="bot-view-panel__header">
