@@ -38,6 +38,8 @@ if (!canvas || !statusEl || !posEl) {
   throw new Error("Failed to initialize DOM");
 }
 
+window.parent?.postMessage({ type: "viewer-ready" }, "*");
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 

@@ -530,9 +530,21 @@ body {
 }
 
 .bot-view-panel__body {
+  position: relative;
   flex: 1;
   min-height: 0;
   background: #000;
+}
+
+.bot-view-panel__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  background: var(--bg-surface);
 }
 
 .bot-view-panel__frame {
@@ -540,6 +552,7 @@ body {
   height: 100%;
   border: 0;
   background: #000;
+  transition: opacity var(--transition);
 }
 
 /* ─── Messages ────────────────────────────────────────── */
