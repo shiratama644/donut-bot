@@ -34,6 +34,10 @@ export interface BotWebSocketState {
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
 
+function isRawWsMessage(value: unknown): value is { type: string } {
+  return typeof value === "object" && value !== null && typeof (value as { type?: unknown }).type === "string";
+}
+
 export function useBotWebSocket(url: string): BotWebSocketState {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -78,7 +82,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     ws.onmessage = ({ data }) => {
       try {
         const parsed = JSON.parse(data as string) as unknown;
-        if (typeof parsed !== "object" || parsed === null || typeof (parsed as { type?: unknown }).type !== "string") {
+        if (!isRawWsMessage(parsed)) {
           throw new Error("Invalid websocket message shape");
         }
         const msg = parsed as BotMessage;
