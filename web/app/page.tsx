@@ -80,6 +80,7 @@ export default function HomePage() {
         onLogout={ws.actions.sendLogout}
         onSwitchAccount={ws.actions.sendSwitchAccount}
         onRemoveAccount={ws.actions.sendRemoveAccount}
+        onReauthAccount={ws.actions.sendReauthAccount}
       />
       <ChatPanel ws={ws} actions={ws.actions} />
       <StatusPanel
@@ -96,6 +97,38 @@ export default function HomePage() {
         currentUsername={ws.currentUsername}
         onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
       />
+      {ws.authState?.state === "REAUTH_REQUIRED" && ws.authState.expectedMcid && ws.authState.actualMcid && (
+        <div className="notice-banner notice-banner--warn" role="alert">
+          <span className="material-symbols-outlined notice-banner__icon">warning</span>
+          <span>
+            MCID 不一致を検出しました（期待値: <strong>{ws.authState.expectedMcid}</strong>、
+            実際: <strong>{ws.authState.actualMcid}</strong>）。
+            自動再認証を実行中です（{ws.authState.attempt}/{ws.authState.maxAttempts}）。
+          </span>
+        </div>
+      )}
+      {ws.authState?.state === "FAILED" && (() => {
+        const failedUsername = ws.authState?.username;
+        if (!failedUsername) return null;
+        return (
+          <div className="notice-banner notice-banner--error" role="alert">
+            <span className="material-symbols-outlined notice-banner__icon">error</span>
+            <span>
+              <strong>{failedUsername}</strong> の自動再認証が上限回数に達しました。
+              アカウントメニューから手動で「再認証」を実行してください。
+            </span>
+            <button
+              type="button"
+              className="notice-banner__dismiss"
+              aria-label="閉じる"
+              onClick={() => ws.actions.sendReauthAccount(failedUsername)}
+            >
+              <span className="material-symbols-outlined">refresh</span>
+              再認証
+            </button>
+          </div>
+        );
+      })()}
       {ws.msaCode && (
         <div className="msa-code-overlay">
           <div className="msa-code-card">

@@ -1,15 +1,61 @@
 import mineflayer, { Bot } from "mineflayer";
+import { randomUUID } from "crypto";
 import { getConfig, MOVE_THROTTLE_MS } from "./config.js";
 import { log } from "./logger.js";
 import { broadcast } from "./broadcast.js";
-import { startWebSocketServer, setBotConnected, clearBotRef, setBotConnecting } from "./websocketServer.js";
+import {
+  startWebSocketServer,
+  setBotConnected,
+  clearBotRef,
+  setBotConnecting,
+  requestMcidReauth,
+  beginAuthLifecycle,
+  markAuthConnected,
+  markAuthDisconnected,
+} from "./websocketServer.js";
 import { startCoordDisplay } from "./coordinates.js";
 import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
+import { getCredentials } from "./credentials.js";
+import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
+import { getAuthState, transitionAuthState } from "./authState.js";
+
+/** 認証セッション追跡用の暗号学的に安全な UUID v4 を生成する。 */
+function createSessionId(): string {
+  return randomUUID();
+}
+
+/**
+ * 既存の再認証フロー中であれば同一 sessionId を再利用し、
+ * 新規接続フローでは新しい sessionId を発行して認証ライフサイクルを開始する。
+ */
+function resolveAuthSession(username: string): string {
+  const current = getAuthState();
+  if (
+    current.username === username &&
+    current.sessionId &&
+    (current.state === "AUTHENTICATING" || current.state === "REAUTH_REQUIRED")
+  ) {
+    transitionAuthState("AUTHENTICATING", {
+      username,
+      sessionId: current.sessionId,
+      nextRetryAt: null,
+      reason: current.reason,
+      retryInFlight: false,
+    }, "resolveAuthSession.reuse");
+    return current.sessionId;
+  }
+  const sessionId = createSessionId();
+  beginAuthLifecycle(username, sessionId);
+  return sessionId;
+}
 
 // ─── Bot ─────────────────────────────────────────────────
 export function createBot(): Bot {
   const config = getConfig();
+  const sessionId = resolveAuthSession(config.username);
+  let ended = false;
+  let spawned = false;
   setBotConnecting();
   log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
   const bot = mineflayer.createBot({
@@ -26,11 +72,51 @@ export function createBot(): Bot {
   let coordTimer: ReturnType<typeof setInterval> | null = null;
   let stopStatus: (() => void) | null = null;
 
-  bot.once("login", () =>
-    log.info(`ログイン成功 — ユーザー名: ${bot.username}  EntityId: ${bot.entity?.id ?? "?"}`));
+  bot.once("login", () => {
+    const currentMcid = bot.username;
+    const creds = getCredentials();
+    if (creds && !creds.username) {
+      log.warn("認証情報に username が存在しないため、MCID 検証をスキップしました");
+    } else if (creds?.username) {
+      const stored = getAccountEntry(creds.username);
+      if (stored?.mcid && stored.mcid !== currentMcid) {
+        // キャッシュされたトークンが別アカウントのもの — キャッシュを削除して再認証する
+        log.warn(
+          `MCID 不一致 [${creds.username}] — 期待値: ${stored.mcid}, 実際: ${currentMcid}` +
+          ` — トークンキャッシュをクリアして再認証します`,
+        );
+        clearAccountProfileCache(creds.username);
+        requestMcidReauth(creds.username, {
+          expected: stored.mcid,
+          actual: currentMcid,
+          sessionId,
+        });
+        bot.end("wrong mcid - reauthenticating");
+        return;
+      }
+    }
+    log.info(`ログイン成功 — ユーザー名: ${currentMcid}  EntityId: ${bot.entity?.id ?? "?"}`);
+  });
 
   bot.once("spawn", () => {
+    if (spawned) return;
+    spawned = true;
     log.info("スポーン完了。");
+    // MCID の保存は spawn 後に行う（ここを最終確定タイミングとする）
+    const creds = getCredentials();
+    const currentMcid = bot.username;
+    const currentAuth = getAuthState();
+    if (
+      !ended &&
+      creds?.username &&
+      currentMcid &&
+      currentAuth.sessionId === sessionId &&
+      (currentAuth.state === "AUTHENTICATING" || currentAuth.state === "REAUTH_REQUIRED")
+    ) {
+      updateAccountMcid(creds.username, currentMcid);
+      broadcast({ type: "accountsList", accounts: getAccountEntries() });
+      markAuthConnected(creds.username, sessionId);
+    }
     startWebSocketServer(bot);
     setBotConnected(true);
     coordTimer = startCoordDisplay(bot);
@@ -69,16 +155,17 @@ export function createBot(): Bot {
   });
   bot.on("error",    (err) => log.error("エラー", err));
   bot.on("end",      (reason) => {
+    if (ended) return;
+    ended = true;
     if (coordTimer) clearInterval(coordTimer);
     if (stopStatus) stopStatus();
     process.stdout.write("\n");
     log.warn(`切断 — 理由: ${reason}`);
     clearBotRef(bot);
     setBotConnected(false);
+    markAuthDisconnected(reason, getCredentials()?.username ?? null);
     // デバイスコード表示をクリアする（ログイン前に切断された場合もクリア）
     broadcast({ type: "msaCodeCleared" });
-    // 意図的な切断（switchAccount / setCredentials）は once("end") リスナーが再接続を担当する。
-    // 非意図的な切断（キック等）はユーザーが手動で Online ボタンを押して再接続する。
   });
 
   return bot;

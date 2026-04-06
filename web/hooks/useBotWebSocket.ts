@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { BotMessage } from "@/types/bot";
+import type { AuthStatePayload, BotMessage } from "@/types/bot";
 
 const RECONNECT_DELAY_MS = 3000;
 
@@ -14,6 +14,7 @@ export interface BotWebSocketActions {
   sendLogout: () => void;
   sendSwitchAccount: (username: string) => void;
   sendRemoveAccount: (username: string) => void;
+  sendReauthAccount: (username: string) => void;
 }
 
 export interface BotWebSocketState {
@@ -22,13 +23,19 @@ export interface BotWebSocketState {
   /** null = サーバーからの応答待ち */
   hasCredentials: boolean | null;
   currentUsername: string | null;
-  accounts: string[];
+  accounts: { username: string; mcid?: string }[];
   /** 最後にキックされた理由。再接続成功時にリセットされる */
   kickReason: string | null;
   /** Microsoft デバイスコード認証が必要な場合のデータ */
   msaCode: { userCode: string; verificationUri: string } | null;
+  /** 認証ライフサイクルの統合状態 */
+  authState: AuthStatePayload | null;
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
+}
+
+function isRawWsMessage(value: unknown): value is { type: string } {
+  return typeof value === "object" && value !== null && typeof (value as { type?: unknown }).type === "string";
 }
 
 export function useBotWebSocket(url: string): BotWebSocketState {
@@ -37,9 +44,11 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [botConnected, setBotConnected] = useState(false);
   const [hasCredentials, setHasCredentials] = useState<boolean | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-  const [accounts, setAccounts] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<{ username: string; mcid?: string }[]>([]);
   const [kickReason, setKickReason] = useState<string | null>(null);
   const [msaCode, setMsaCode] = useState<{ userCode: string; verificationUri: string } | null>(null);
+  const [authState, setAuthState] = useState<AuthStatePayload | null>(null);
+  const authStateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -72,10 +81,16 @@ export function useBotWebSocket(url: string): BotWebSocketState {
 
     ws.onmessage = ({ data }) => {
       try {
-        const msg = JSON.parse(data as string) as unknown as BotMessage;
+        const parsed = JSON.parse(data as string) as unknown;
+        if (!isRawWsMessage(parsed)) {
+          throw new Error("Invalid websocket message shape");
+        }
+        const msg = parsed as BotMessage;
         if (msg.type === "botConnection") {
           setBotConnected(msg.connected);
-          if (msg.connected) setKickReason(null);
+          if (msg.connected) {
+            setKickReason(null);
+          }
           return;
         }
         if (msg.type === "kicked") {
@@ -88,7 +103,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
           return;
         }
         if (msg.type === "accountsList") {
-          setAccounts(msg.usernames);
+          setAccounts(msg.accounts);
           return;
         }
         if (msg.type === "msaCode") {
@@ -99,9 +114,38 @@ export function useBotWebSocket(url: string): BotWebSocketState {
           setMsaCode(null);
           return;
         }
-        handlersRef.current.forEach((h) => h(msg));
-      } catch {
-        // 無効なJSON無視
+        if (msg.type === "authState") {
+          if (msg.version !== 2) {
+            throw new Error(`Unsupported authState version: ${String((msg as { version?: unknown }).version)}`);
+          }
+          if (authStateTimer.current) {
+            clearTimeout(authStateTimer.current);
+            authStateTimer.current = null;
+          }
+          if (msg.auth.state === "FAILED") {
+            authStateTimer.current = setTimeout(() => {
+              setAuthState(msg.auth);
+              authStateTimer.current = null;
+            }, 150);
+          } else {
+            setAuthState(msg.auth);
+          }
+          return;
+        }
+        if (
+          msg.type === "pos" ||
+          msg.type === "status" ||
+          msg.type === "chat" ||
+          msg.type === "actionbar" ||
+          msg.type === "log" ||
+          msg.type === "sent"
+        ) {
+          handlersRef.current.forEach((h) => h(msg));
+          return;
+        }
+        throw new Error(`Unknown websocket message type: ${(msg as { type: string }).type}`);
+      } catch (err) {
+        console.error(err);
       }
     };
   }, [url]);
@@ -112,6 +156,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     return () => {
       unmountedRef.current = true;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (authStateTimer.current) clearTimeout(authStateTimer.current);
       wsRef.current?.close();
     };
   }, [connect]);
@@ -155,16 +200,20 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "removeAccount", username });
   }, [send]);
 
+  /** MCID 不一致で自動再認証が失敗した際に、手動再認証を開始する。 */
+  const sendReauthAccount = useCallback((username: string) => {
+    send({ type: "reauthAccount", username });
+  }, [send]);
+
   const onMessage = useCallback((handler: (msg: BotMessage) => void) => {
     handlersRef.current.add(handler);
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
   const actions = useMemo(
-    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount }),
-    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount],
+    () => ({ sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount, sendReauthAccount }),
+    [sendChat, sendSetInterval, sendDisconnect, sendReconnect, sendSetCredentials, sendLogout, sendSwitchAccount, sendRemoveAccount, sendReauthAccount],
   );
 
-  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, msaCode, actions, onMessage };
+  return { connected, botConnected, hasCredentials, currentUsername, accounts, kickReason, msaCode, authState, actions, onMessage };
 }
-

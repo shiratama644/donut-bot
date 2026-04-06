@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import type { BotWebSocketActions, BotWebSocketState } from "@/hooks/useBotWebSocket";
 import { useMessageHistory } from "@/hooks/useMessageHistory";
 import { sanitizeText, formatMsgTime } from "@/lib/sanitize";
@@ -206,8 +206,9 @@ export default function ChatPanel({ ws, actions }: Props) {
 
   // Enter キーで送信（IME 確定時は無視）
   const handleKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !e.isComposing) {
+    (e: ReactKeyboardEvent<HTMLInputElement>) => {
+      const isComposing = e.nativeEvent.isComposing;
+      if (e.key === "Enter" && !isComposing) {
         e.preventDefault();
         doSend();
       }
@@ -275,4 +276,3 @@ export default function ChatPanel({ ws, actions }: Props) {
     </div>
   );
 }
-

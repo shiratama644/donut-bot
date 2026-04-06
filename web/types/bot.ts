@@ -64,7 +64,7 @@ export interface CredentialsInfoMessage {
 
 export interface AccountsListMessage {
   type: "accountsList";
-  usernames: string[];
+  accounts: { username: string; mcid?: string }[];
 }
 
 export interface MsaCodeMessage {
@@ -77,7 +77,32 @@ export interface MsaCodeClearedMessage {
   type: "msaCodeCleared";
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage;
+export type AuthStateKind =
+  | "DISCONNECTED"
+  | "AUTHENTICATING"
+  | "CONNECTED"
+  | "REAUTH_REQUIRED"
+  | "FAILED";
+
+export interface AuthStatePayload {
+  state: AuthStateKind;
+  username: string | null;
+  sessionId: string | null;
+  attempt: number;
+  maxAttempts: number;
+  nextRetryAt: number | null;
+  reason: string | null;
+  expectedMcid: string | null;
+  actualMcid: string | null;
+}
+
+export interface AuthStateMessage {
+  type: "authState";
+  auth: AuthStatePayload;
+  version: 2;
+}
+
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | AuthStateMessage;
 
 export interface Position {
   x: number;

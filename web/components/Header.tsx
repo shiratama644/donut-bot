@@ -14,19 +14,21 @@ interface Props {
   onOpenStatus: () => void;
   onOpenSettings: () => void;
   currentUsername: string | null;
-  accounts: string[];
+  accounts: { username: string; mcid?: string }[];
   kickReason: string | null;
   onLogout: () => void;
   onSwitchAccount: (username: string) => void;
   onRemoveAccount: (username: string) => void;
+  onReauthAccount: (username: string) => void;
 }
 
-export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, accounts, kickReason, onLogout, onSwitchAccount, onRemoveAccount }: Props) {
+export default function Header({ position, connected, botConnected, onToggleConnection, theme, onToggleTheme, onOpenStatus, onOpenSettings, currentUsername, accounts, kickReason, onLogout, onSwitchAccount, onRemoveAccount, onReauthAccount }: Props) {
   const fmt = (n: number) => n.toFixed(1);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const otherAccounts = accounts.filter((u) => u !== currentUsername);
+  const otherAccounts = accounts.filter((a) => a.username !== currentUsername);
+  const currentAccount = accounts.find((a) => a.username === currentUsername);
 
   useEffect(() => {
     if (!accountMenuOpen) return;
@@ -144,7 +146,12 @@ export default function Header({ position, connected, botConnected, onToggleConn
             <div className="app-header__account-section-label">ログイン中</div>
             <div className="app-header__account-row app-header__account-row--active">
               <span className="material-symbols-outlined app-header__account-row-icon">person</span>
-              <span className="app-header__account-row-name">{currentUsername ?? "不明"}</span>
+              <span className="app-header__account-row-name">
+                {currentUsername ?? "不明"}
+                {currentAccount?.mcid && (
+                  <span className="app-header__account-row-mcid"> ({currentAccount.mcid})</span>
+                )}
+              </span>
             </div>
 
             {/* その他のアカウント */}
@@ -152,27 +159,44 @@ export default function Header({ position, connected, botConnected, onToggleConn
               <>
                 <div className="app-header__account-divider" />
                 <div className="app-header__account-section-label">アカウント切り替え</div>
-                {otherAccounts.map((username) => (
-                  <div key={username} className="app-header__account-row">
+                {otherAccounts.map((account) => (
+                  <div key={account.username} className="app-header__account-row">
                     <button
                       type="button"
                       className="app-header__account-row-switch"
                       role="menuitem"
                       onClick={() => {
                         setAccountMenuOpen(false);
-                        onSwitchAccount(username);
+                        onSwitchAccount(account.username);
                       }}
-                      title={`${username} に切り替え`}
+                      title={`${account.username} に切り替え`}
                     >
                       <span className="material-symbols-outlined app-header__account-row-icon">person_outline</span>
-                      <span className="app-header__account-row-name">{username}</span>
+                      <span className="app-header__account-row-name">
+                        {account.username}
+                        {account.mcid && (
+                          <span className="app-header__account-row-mcid"> ({account.mcid})</span>
+                        )}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="app-header__account-row-reauth"
+                      aria-label={`${account.username} を再認証`}
+                      title="再認証（MCIDが違う場合に使用）"
+                      onClick={() => {
+                        setAccountMenuOpen(false);
+                        onReauthAccount(account.username);
+                      }}
+                    >
+                      <span className="material-symbols-outlined">refresh</span>
                     </button>
                     <button
                       type="button"
                       className="app-header__account-row-remove"
-                      aria-label={`${username} を削除`}
+                      aria-label={`${account.username} を削除`}
                       title="削除"
-                      onClick={() => onRemoveAccount(username)}
+                      onClick={() => onRemoveAccount(account.username)}
                     >
                       <span className="material-symbols-outlined">close</span>
                     </button>
@@ -182,6 +206,20 @@ export default function Header({ position, connected, botConnected, onToggleConn
             )}
 
             <div className="app-header__account-divider" />
+            <button
+              type="button"
+              className="app-header__account-row-reauth app-header__account-reauth-current"
+              role="menuitem"
+              title="現在のアカウントを再認証（MCIDが違う場合に使用）"
+              onClick={() => {
+                setAccountMenuOpen(false);
+                if (currentUsername) onReauthAccount(currentUsername);
+              }}
+              disabled={!currentUsername}
+            >
+              <span className="material-symbols-outlined">refresh</span>
+              再認証
+            </button>
             <button
               type="button"
               className="app-header__account-logout-btn"
