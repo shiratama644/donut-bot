@@ -18,7 +18,7 @@ import { registerChatHandler } from "./chat.js";
 import { startStatusBroadcast } from "./status.js";
 import { getCredentials } from "./credentials.js";
 import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
-import { getAuthState, setAuthState } from "./authState.js";
+import { getAuthState, transitionAuthState } from "./authState.js";
 
 /** 認証セッション追跡用の暗号学的に安全な UUID v4 を生成する。 */
 function createSessionId(): string {
@@ -36,13 +36,13 @@ function resolveAuthSession(username: string): string {
     current.sessionId &&
     (current.state === "AUTHENTICATING" || current.state === "REAUTH_REQUIRED")
   ) {
-    setAuthState({
-      state: "AUTHENTICATING",
+    transitionAuthState("AUTHENTICATING", {
       username,
       sessionId: current.sessionId,
       nextRetryAt: null,
       reason: current.reason,
-    });
+      retryInFlight: false,
+    }, "resolveAuthSession.reuse");
     return current.sessionId;
   }
   const sessionId = createSessionId();
@@ -54,6 +54,8 @@ function resolveAuthSession(username: string): string {
 export function createBot(): Bot {
   const config = getConfig();
   const sessionId = resolveAuthSession(config.username);
+  let ended = false;
+  let spawned = false;
   setBotConnecting();
   log.info(`接続中… host=${config.host} version=${config.version} auth=${config.auth}`);
   const bot = mineflayer.createBot({
@@ -97,11 +99,20 @@ export function createBot(): Bot {
   });
 
   bot.once("spawn", () => {
+    if (spawned) return;
+    spawned = true;
     log.info("スポーン完了。");
     // MCID の保存は spawn 後に行う（ここを最終確定タイミングとする）
     const creds = getCredentials();
     const currentMcid = bot.username;
-    if (creds?.username && currentMcid) {
+    const currentAuth = getAuthState();
+    if (
+      !ended &&
+      creds?.username &&
+      currentMcid &&
+      currentAuth.sessionId === sessionId &&
+      (currentAuth.state === "AUTHENTICATING" || currentAuth.state === "REAUTH_REQUIRED")
+    ) {
       updateAccountMcid(creds.username, currentMcid);
       broadcast({ type: "accountsList", accounts: getAccountEntries() });
       markAuthConnected(creds.username, sessionId);
@@ -144,6 +155,8 @@ export function createBot(): Bot {
   });
   bot.on("error",    (err) => log.error("エラー", err));
   bot.on("end",      (reason) => {
+    if (ended) return;
+    ended = true;
     if (coordTimer) clearInterval(coordTimer);
     if (stopStatus) stopStatus();
     process.stdout.write("\n");

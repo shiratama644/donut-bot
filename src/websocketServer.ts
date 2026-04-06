@@ -8,7 +8,7 @@ import { broadcast, setWss } from "./broadcast.js";
 import { setStatusIntervalMs } from "./status.js";
 import { saveCredentials, getCredentials, clearCredentials } from "./credentials.js";
 import { getAccountEntries, getAccountCredentials, removeAccount, clearAccountProfileCache } from "./accounts.js";
-import { getAuthState, resetAuthState, setAuthState } from "./authState.js";
+import { getAuthState, resetAuthState, transitionAuthState } from "./authState.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -20,6 +20,7 @@ let reconnectCallback: (() => void) | null = null;
 const MAX_MCID_REAUTH_ATTEMPTS = 3;
 const MCID_REAUTH_BASE_BACKOFF_MS = 1000;
 const MCID_REAUTH_MAX_BACKOFF_MS = 10000;
+const MCID_REAUTH_MAX_TOTAL_DURATION_MS = 60_000;
 
 interface McidRetryState {
   username: string | null;
@@ -82,8 +83,7 @@ export function beginAuthLifecycle(username: string, sessionId: string): void {
   mcidRetryState.username = username;
   mcidRetryState.sessionId = sessionId;
   mcidRetryState.attempts = 0;
-  setAuthState({
-    state: "AUTHENTICATING",
+  transitionAuthState("AUTHENTICATING", {
     username,
     sessionId,
     attempt: 0,
@@ -92,7 +92,10 @@ export function beginAuthLifecycle(username: string, sessionId: string): void {
     reason: null,
     expectedMcid: null,
     actualMcid: null,
-  });
+    retryStartedAt: null,
+    retryDeadlineAt: null,
+    retryInFlight: false,
+  }, "beginAuthLifecycle");
   log.event("info", "auth.lifecycle.begin", { username, sessionId });
 }
 
@@ -104,8 +107,7 @@ export function markAuthConnected(username: string, sessionId: string): void {
   mcidRetryState.username = username;
   mcidRetryState.sessionId = sessionId;
   mcidRetryState.attempts = 0;
-  setAuthState({
-    state: "CONNECTED",
+  transitionAuthState("CONNECTED", {
     username,
     sessionId,
     attempt: 0,
@@ -114,12 +116,26 @@ export function markAuthConnected(username: string, sessionId: string): void {
     reason: null,
     expectedMcid: null,
     actualMcid: null,
-  });
+    retryStartedAt: null,
+    retryDeadlineAt: null,
+    retryInFlight: false,
+  }, "markAuthConnected");
   log.event("info", "auth.lifecycle.connected", { username, sessionId });
 }
 
-function classifyMcidFailure(attempt: number): "transient" | "permanent" {
-  return attempt <= MAX_MCID_REAUTH_ATTEMPTS ? "transient" : "permanent";
+type RetryClassification = {
+  classification: "transient" | "permanent";
+  reason: "attempt_limit" | "total_duration_limit" | "retryable_mcid_mismatch";
+};
+
+function classifyMcidFailure(attempt: number, startedAt: number, now: number): RetryClassification {
+  if (attempt > MAX_MCID_REAUTH_ATTEMPTS) {
+    return { classification: "permanent", reason: "attempt_limit" };
+  }
+  if (now - startedAt > MCID_REAUTH_MAX_TOTAL_DURATION_MS) {
+    return { classification: "permanent", reason: "total_duration_limit" };
+  }
+  return { classification: "transient", reason: "retryable_mcid_mismatch" };
 }
 
 function computeBackoffWithJitterMs(attempt: number): number {
@@ -139,12 +155,15 @@ export function requestMcidReauth(username: string, details: { expected: string;
     clearTimeout(mcidRetryState.timer);
     mcidRetryState.timer = null;
   }
+  const now = Date.now();
+  const current = getAuthState();
+  const retryStartedAt = current.retryStartedAt ?? now;
+  const retryDeadlineAt = retryStartedAt + MCID_REAUTH_MAX_TOTAL_DURATION_MS;
   const attempt = mcidRetryState.attempts + 1;
-  const classification = classifyMcidFailure(attempt);
-  if (classification === "permanent") {
+  const retry = classifyMcidFailure(attempt, retryStartedAt, now);
+  if (retry.classification === "permanent") {
     mcidRetryState.attempts = attempt;
-    setAuthState({
-      state: "FAILED",
+    transitionAuthState("FAILED", {
       username,
       sessionId: details.sessionId,
       attempt,
@@ -153,16 +172,22 @@ export function requestMcidReauth(username: string, details: { expected: string;
       reason: "mcid_mismatch_retry_exhausted",
       expectedMcid: details.expected,
       actualMcid: details.actual,
-    });
+      retryStartedAt,
+      retryDeadlineAt,
+      retryInFlight: false,
+    }, "requestMcidReauth.permanent");
     log.event("error", "auth.reauth.exhausted", {
       username,
       sessionId: details.sessionId,
       attempt,
       maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
-      classification,
+      classification: retry.classification,
+      classificationReason: retry.reason,
       expectedMcid: details.expected,
       actualMcid: details.actual,
       recoverable: false,
+      retryStartedAt,
+      retryDeadlineAt,
     });
     return;
   }
@@ -172,8 +197,7 @@ export function requestMcidReauth(username: string, details: { expected: string;
   mcidRetryState.username = username;
   mcidRetryState.sessionId = details.sessionId;
   mcidRetryState.attempts = attempt;
-  setAuthState({
-    state: "REAUTH_REQUIRED",
+  transitionAuthState("REAUTH_REQUIRED", {
     username,
     sessionId: details.sessionId,
     attempt,
@@ -182,31 +206,40 @@ export function requestMcidReauth(username: string, details: { expected: string;
     reason: "mcid_mismatch",
     expectedMcid: details.expected,
     actualMcid: details.actual,
-  });
+    retryStartedAt,
+    retryDeadlineAt,
+    retryInFlight: true,
+  }, "requestMcidReauth.transient");
   log.event("warn", "auth.reauth.scheduled", {
     username,
     sessionId: details.sessionId,
     attempt,
     maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
-    classification,
+    classification: retry.classification,
+    classificationReason: retry.reason,
     recoverable: true,
     expectedMcid: details.expected,
     actualMcid: details.actual,
     delayMs,
     nextRetryAt,
+    retryStartedAt,
+    retryDeadlineAt,
   });
   mcidRetryState.timer = setTimeout(() => {
     mcidRetryState.timer = null;
-    if (!isConnecting && !isBotConnected) {
-      setAuthState({
-        state: "AUTHENTICATING",
+    const state = getAuthState();
+    if (!isConnecting && !isBotConnected && state.sessionId === details.sessionId) {
+      transitionAuthState("AUTHENTICATING", {
         username,
         sessionId: details.sessionId,
         attempt,
         maxAttempts: MAX_MCID_REAUTH_ATTEMPTS,
         nextRetryAt: null,
         reason: "mcid_mismatch_retry",
-      });
+        retryStartedAt,
+        retryDeadlineAt,
+        retryInFlight: false,
+      }, "requestMcidReauth.timer");
       reconnectCallback?.();
     }
   }, delayMs);
@@ -217,13 +250,13 @@ export function markAuthDisconnected(reason: string, username: string | null): v
   if (current.state === "FAILED" || current.state === "REAUTH_REQUIRED") {
     return;
   }
-  setAuthState({
-    state: "DISCONNECTED",
+  transitionAuthState("DISCONNECTED", {
     username,
     sessionId: current.sessionId,
     nextRetryAt: null,
     reason,
-  });
+    retryInFlight: false,
+  }, "markAuthDisconnected");
   log.event("warn", "auth.lifecycle.disconnected", {
     username,
     sessionId: current.sessionId,
@@ -276,10 +309,14 @@ export function initWebSocketServer(): void {
 
     ws.on("message", (raw) => {
       try {
-        const msg = JSON.parse(raw.toString()) as Record<string, unknown>;
-        handleClientMessage(ws, msg);
+        const msg = JSON.parse(raw.toString()) as unknown;
+        if (typeof msg !== "object" || msg === null || typeof (msg as { type?: unknown }).type !== "string") {
+          log.event("error", "ws.message.invalid_shape", { raw: raw.toString().slice(0, 256) });
+          return;
+        }
+        handleClientMessage(ws, msg as Record<string, unknown>);
       } catch {
-        // 無効なJSON無視
+        log.event("error", "ws.message.invalid_json");
       }
     });
 
@@ -470,5 +507,8 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
           ws.send(JSON.stringify({ type: "tabcomplete", requestId, matches: [] }));
         }
       });
+    return;
   }
+
+  log.event("error", "ws.message.unknown_type", { type: msg.type });
 }

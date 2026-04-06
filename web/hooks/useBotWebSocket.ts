@@ -44,6 +44,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [kickReason, setKickReason] = useState<string | null>(null);
   const [msaCode, setMsaCode] = useState<{ userCode: string; verificationUri: string } | null>(null);
   const [authState, setAuthState] = useState<AuthStatePayload | null>(null);
+  const authStateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
@@ -76,7 +77,11 @@ export function useBotWebSocket(url: string): BotWebSocketState {
 
     ws.onmessage = ({ data }) => {
       try {
-        const msg = JSON.parse(data as string) as unknown as BotMessage;
+        const parsed = JSON.parse(data as string) as unknown;
+        if (typeof parsed !== "object" || parsed === null || typeof (parsed as { type?: unknown }).type !== "string") {
+          throw new Error("Invalid websocket message shape");
+        }
+        const msg = parsed as BotMessage;
         if (msg.type === "botConnection") {
           setBotConnected(msg.connected);
           if (msg.connected) {
@@ -106,12 +111,37 @@ export function useBotWebSocket(url: string): BotWebSocketState {
           return;
         }
         if (msg.type === "authState") {
-          setAuthState(msg.auth);
+          if (msg.version !== 2) {
+            throw new Error(`Unsupported authState version: ${String((msg as { version?: unknown }).version)}`);
+          }
+          if (authStateTimer.current) {
+            clearTimeout(authStateTimer.current);
+            authStateTimer.current = null;
+          }
+          if (msg.auth.state === "FAILED") {
+            authStateTimer.current = setTimeout(() => {
+              setAuthState(msg.auth);
+              authStateTimer.current = null;
+            }, 150);
+          } else {
+            setAuthState(msg.auth);
+          }
           return;
         }
-        handlersRef.current.forEach((h) => h(msg));
-      } catch {
-        // 無効なJSON無視
+        if (
+          msg.type === "pos" ||
+          msg.type === "status" ||
+          msg.type === "chat" ||
+          msg.type === "actionbar" ||
+          msg.type === "log" ||
+          msg.type === "sent"
+        ) {
+          handlersRef.current.forEach((h) => h(msg));
+          return;
+        }
+        throw new Error(`Unknown websocket message type: ${(msg as { type: string }).type}`);
+      } catch (err) {
+        console.error(err);
       }
     };
   }, [url]);
@@ -122,6 +152,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     return () => {
       unmountedRef.current = true;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (authStateTimer.current) clearTimeout(authStateTimer.current);
       wsRef.current?.close();
     };
   }, [connect]);

@@ -207,7 +207,9 @@ export default function ChatPanel({ ws, actions }: Props) {
   // Enter キーで送信（IME 確定時は無視）
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter" && !e.isComposing) {
+      const native = e.nativeEvent as KeyboardEvent | undefined;
+      const isComposing = native?.isComposing ?? false;
+      if (e.key === "Enter" && !isComposing) {
         e.preventDefault();
         doSend();
       }
@@ -275,4 +277,3 @@ export default function ChatPanel({ ws, actions }: Props) {
     </div>
   );
 }
-

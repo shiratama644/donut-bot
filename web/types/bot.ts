@@ -99,6 +99,7 @@ export interface AuthStatePayload {
 export interface AuthStateMessage {
   type: "authState";
   auth: AuthStatePayload;
+  version: 2;
 }
 
 export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | AuthStateMessage;
