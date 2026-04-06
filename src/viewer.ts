@@ -4,6 +4,7 @@ import {
   BOT_VIEWER_PORT,
   BOT_VIEWER_PREFIX,
   BOT_VIEWER_VIEW_DISTANCE,
+  BOT_VIEWER_ENABLED,
 } from "./config.js";
 
 type ViewerBot = Bot & {
@@ -17,6 +18,8 @@ let viewerStarted = false;
 let startingPromise: Promise<void> | null = null;
 
 export async function startBotViewer(bot: Bot): Promise<void> {
+  if (!BOT_VIEWER_ENABLED) return;
+
   const viewerBot = bot as ViewerBot;
   if (activeBot === viewerBot && viewerStarted) {
     return;
@@ -55,6 +58,18 @@ export async function startBotViewer(bot: Bot): Promise<void> {
         `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
       );
     } catch (err) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof err.message === "string" &&
+        err.message.includes("Cannot find module 'canvas'")
+      ) {
+        log.warn(
+          "Bot Viewer は 'canvas' 依存が未導入のため起動をスキップしました。Termux 環境では BOT_VIEWER_ENABLED=false を設定してください。",
+        );
+        return;
+      }
       log.error("Bot Viewer の起動に失敗しました", err);
     } finally {
       startingPromise = null;
