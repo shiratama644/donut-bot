@@ -8,7 +8,9 @@ export interface AccountEntry {
   mcid?: string;
 }
 
-type AccountPatch = Partial<Pick<AccountEntry, "mcid">>;
+type AccountPatch = {
+  mcid?: string;
+};
 
 const ACCOUNTS_PATH = path.join(process.cwd(), ".cache", "accounts.json");
 
@@ -53,6 +55,8 @@ export function addOrUpdateAccount(creds: Credentials): void {
 
 /** 既存アカウントを明示的なフィールド単位で更新する（不明フィールドの破壊を防ぐ） */
 export function patchAccountEntry(username: string, patch: AccountPatch): void {
+  if (typeof username !== "string" || !username.trim()) return;
+  if (patch.mcid !== undefined && (typeof patch.mcid !== "string" || !patch.mcid.trim())) return;
   const accounts = loadAccounts();
   const idx = accounts.findIndex((a) => a.username === username);
   if (idx < 0) return;

@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 
-import { addOrUpdateAccount, getAccountEntry, updateAccountMcid } from "./accounts.js";
+import { addOrUpdateAccount, getAccountEntry, patchAccountEntry, updateAccountMcid } from "./accounts.js";
 
 function withTempCwd<T>(run: () => T): T {
   const prev = process.cwd();
@@ -39,5 +39,29 @@ test("addOrUpdateAccount does not clobber other account mcid entries", () => {
     addOrUpdateAccount({ username: "a@example.com" });
     assert.equal(getAccountEntry("a@example.com")?.mcid, "McidA");
     assert.equal(getAccountEntry("b@example.com")?.mcid, "McidB");
+  });
+});
+
+test("patchAccountEntry rejects undefined-like clobber attempts", () => {
+  withTempCwd(() => {
+    addOrUpdateAccount({ username: "user@example.com" });
+    updateAccountMcid("user@example.com", "StableMcid");
+    patchAccountEntry("user@example.com", { mcid: "   " });
+    assert.equal(getAccountEntry("user@example.com")?.mcid, "StableMcid");
+  });
+});
+
+test("interleaved account updates preserve per-account mcid isolation", () => {
+  withTempCwd(() => {
+    addOrUpdateAccount({ username: "a@example.com" });
+    addOrUpdateAccount({ username: "b@example.com" });
+
+    updateAccountMcid("a@example.com", "A1");
+    patchAccountEntry("b@example.com", { mcid: "B1" });
+    patchAccountEntry("a@example.com", { mcid: "A2" });
+    updateAccountMcid("b@example.com", "B2");
+
+    assert.equal(getAccountEntry("a@example.com")?.mcid, "A2");
+    assert.equal(getAccountEntry("b@example.com")?.mcid, "B2");
   });
 });
