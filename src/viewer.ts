@@ -16,6 +16,9 @@ let activeViewerBot: ViewerBot | null = null;
 
 export async function startBotViewer(bot: Bot): Promise<void> {
   const viewerBot = bot as ViewerBot;
+  if (activeViewerBot === viewerBot && viewerBot.viewer?.close) {
+    return;
+  }
   if (activeViewerBot?.viewer?.close && activeViewerBot !== viewerBot) {
     try {
       activeViewerBot.viewer.close();
