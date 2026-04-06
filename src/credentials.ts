@@ -30,7 +30,7 @@ export function loadCredentials(): Credentials | null {
     if (typeof data.username === "string" && data.username.trim()) {
       _credentials = {
         username: data.username,
-        ...(typeof data.password === "string" && data.password.trim() ? { password: data.password } : {}),
+        ...(typeof data.password === "string" && data.password.trim() ? { password: data.password.trim() } : {}),
       };
       return _credentials;
     }

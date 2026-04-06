@@ -46,17 +46,18 @@ export function saveAccounts(accounts: AccountEntry[]): void {
 export function addOrUpdateAccount(creds: Credentials): void {
   const accounts = loadAccounts();
   const idx = accounts.findIndex((a) => a.username === creds.username);
-  const nextPassword =
-    typeof creds.password === "string" && creds.password.trim()
-      ? creds.password
-      : undefined;
+  const passwordFieldProvided = Object.prototype.hasOwnProperty.call(creds, "password");
+  const nextPassword = typeof creds.password === "string" ? creds.password.trim() : "";
   if (idx >= 0) {
     // 既存エントリは必要な項目のみ更新（mcid は維持）
-    accounts[idx] = {
+    const nextEntry: AccountEntry = {
       username: accounts[idx].username,
       mcid: accounts[idx].mcid,
-      password: nextPassword ?? accounts[idx].password,
+      ...(passwordFieldProvided
+        ? (nextPassword ? { password: nextPassword } : {})
+        : (accounts[idx].password ? { password: accounts[idx].password } : {})),
     };
+    accounts[idx] = nextEntry;
   } else {
     accounts.push({ username: creds.username, ...(nextPassword ? { password: nextPassword } : {}) });
   }
@@ -72,6 +73,7 @@ export function patchAccountEntry(username: string, patch: AccountPatch): void {
   if (idx < 0) return;
   const next: AccountEntry = {
     username: accounts[idx].username,
+    password: accounts[idx].password,
     mcid: patch.mcid ?? accounts[idx].mcid,
   };
   accounts[idx] = next;
@@ -105,7 +107,7 @@ export function getAccountCredentials(username: string): Credentials | null {
   if (!entry) return null;
   return {
     username: entry.username,
-    ...(typeof entry.password === "string" && entry.password.trim() ? { password: entry.password } : {}),
+    ...(typeof entry.password === "string" && entry.password.trim() ? { password: entry.password.trim() } : {}),
   };
 }
 

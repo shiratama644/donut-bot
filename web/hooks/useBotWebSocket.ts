@@ -188,7 +188,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({
       type: "setCredentials",
       username,
-      ...(typeof password === "string" && password.trim() ? { password } : {}),
+      ...(password ? { password } : {}),
     });
   }, [send]);
 
