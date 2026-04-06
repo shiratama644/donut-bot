@@ -1,9 +1,8 @@
-import { BOT_VIEWER_ENABLED } from "./config.js";
 import { broadcast } from "./broadcast.js";
 
-export type ViewerMode = "disabled" | "prismarine" | "three";
+export type ViewerMode = "disabled" | "pending" | "prismarine" | "three";
 
-let viewerMode: ViewerMode = BOT_VIEWER_ENABLED ? "prismarine" : "disabled";
+let viewerMode: ViewerMode = "pending";
 
 export function getViewerMode(): ViewerMode {
   return viewerMode;

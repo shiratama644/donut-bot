@@ -31,7 +31,7 @@ export interface BotWebSocketState {
   /** 認証ライフサイクルの統合状態 */
   authState: AuthStatePayload | null;
   /** Viewer の表示モード */
-  viewerMode: "disabled" | "prismarine" | "three";
+  viewerMode: "disabled" | "pending" | "prismarine" | "three";
   actions: BotWebSocketActions;
   onMessage: (handler: (msg: BotMessage) => void) => () => void;
 }
@@ -50,7 +50,7 @@ export function useBotWebSocket(url: string): BotWebSocketState {
   const [kickReason, setKickReason] = useState<string | null>(null);
   const [msaCode, setMsaCode] = useState<{ userCode: string; verificationUri: string } | null>(null);
   const [authState, setAuthState] = useState<AuthStatePayload | null>(null);
-  const [viewerMode, setViewerMode] = useState<"disabled" | "prismarine" | "three">("prismarine");
+  const [viewerMode, setViewerMode] = useState<"disabled" | "pending" | "prismarine" | "three">("pending");
   const authStateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handlersRef = useRef<Set<(msg: BotMessage) => void>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
