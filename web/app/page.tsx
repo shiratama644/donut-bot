@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import ChatPanel from "@/components/ChatPanel";
+import BotViewPanel from "@/components/BotViewPanel";
 import StatusPanel from "@/components/StatusPanel";
 import SettingsPanel from "@/components/SettingsPanel";
 import LoginPanel from "@/components/LoginPanel";
@@ -16,6 +17,11 @@ const WS_URL =
   (typeof window !== "undefined"
     ? `ws://${window.location.hostname}:3000`
     : "ws://localhost:3000");
+const VIEWER_URL =
+  process.env.NEXT_PUBLIC_BOT_VIEWER_URL ??
+  (typeof window !== "undefined"
+    ? `http://${window.location.hostname}:3002/viewer/`
+    : "http://localhost:3002/viewer/");
 
 const DEFAULT_INTERVAL_MS = 2000;
 
@@ -82,7 +88,14 @@ export default function HomePage() {
         onRemoveAccount={ws.actions.sendRemoveAccount}
         onReauthAccount={ws.actions.sendReauthAccount}
       />
-      <ChatPanel ws={ws} actions={ws.actions} />
+      <main className="app-main-split">
+        <section className="app-main-split__top">
+          <ChatPanel ws={ws} actions={ws.actions} />
+        </section>
+        <section className="app-main-split__bottom">
+          <BotViewPanel src={VIEWER_URL} />
+        </section>
+      </main>
       <StatusPanel
         open={statusOpen}
         onClose={() => setStatusOpen(false)}
