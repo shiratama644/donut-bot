@@ -1,4 +1,5 @@
 packages:
   - "web"
+  - "viewer-via-three"
 allowBuilds:
   sharp: true
