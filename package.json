@@ -8,7 +8,7 @@
     "test:ci": "pnpm build && pnpm test",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "dev:all": "concurrently --names \"web,bot\" --prefix-colors \"cyan,yellow\" \"pnpm --filter donutsmp-bot-web dev\" \"pnpm dev\"",
+    "dev:all": "concurrently --names \"web,bot,viewer\" --prefix-colors \"cyan,yellow,magenta\" \"pnpm --filter donutsmp-bot-web dev\" \"pnpm dev\" \"pnpm viewer-three:dev\"",
     "web:dev": "pnpm --filter donutsmp-bot-web dev",
     "web:build": "pnpm --filter donutsmp-bot-web build",
     "web:start": "pnpm --filter donutsmp-bot-web start",

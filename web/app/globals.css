@@ -108,6 +108,7 @@ body {
 
 .app-main-split__top,
 .app-main-split__bottom {
+  display: flex;
   min-height: 0;
 }
 
@@ -501,6 +502,7 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  width: 100%;
   min-height: 0;
 }
 
@@ -530,9 +532,21 @@ body {
 }
 
 .bot-view-panel__body {
+  position: relative;
   flex: 1;
   min-height: 0;
   background: #000;
+}
+
+.bot-view-panel__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  background: var(--bg-surface);
 }
 
 .bot-view-panel__frame {
@@ -540,6 +554,7 @@ body {
   height: 100%;
   border: 0;
   background: #000;
+  transition: opacity var(--transition);
 }
 
 /* ─── Messages ────────────────────────────────────────── */
@@ -655,6 +670,7 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
   word-break: break-word;
+  overflow-wrap: anywhere;
   line-height: 1.6;
 }
 
@@ -670,6 +686,7 @@ body {
 .msg-header {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -693,6 +710,7 @@ body {
   font-size: 14px;
   color: var(--text-primary);
   word-break: break-word;
+  overflow-wrap: anywhere;
   line-height: 1.5;
 }
 
