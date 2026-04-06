@@ -1,23 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface Props {
   src: string;
   visible?: boolean;
+  requireReadySignal?: boolean;
 }
 
-export default function BotViewPanel({ src, visible = true }: Props) {
-  const frameRef = useRef<HTMLIFrameElement | null>(null);
+export default function BotViewPanel({ src, visible = true, requireReadySignal = false }: Props) {
   const [isReady, setIsReady] = useState(false);
+
+  const frameSrc = useMemo(() => {
+    const url = new URL(src, window.location.href);
+    if (!requireReadySignal) return url.toString();
+    url.searchParams.set("parentOrigin", window.location.origin);
+    return url.toString();
+  }, [requireReadySignal, src]);
 
   const frameOrigin = useMemo(() => {
     try {
-      return new URL(src, typeof window !== "undefined" ? window.location.href : "http://localhost").origin;
+      return new URL(frameSrc).origin;
     } catch {
       return null;
     }
-  }, [src]);
+  }, [frameSrc]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     if (!frameOrigin || event.origin !== frameOrigin) return;
@@ -26,10 +33,16 @@ export default function BotViewPanel({ src, visible = true }: Props) {
     }
   }, [frameOrigin]);
 
+  const handleFrameLoad = useCallback(() => {
+    if (!requireReadySignal) {
+      setIsReady(true);
+    }
+  }, [requireReadySignal]);
+
   useEffect(() => {
     if (!visible) return;
     setIsReady(false);
-  }, [src, visible]);
+  }, [frameSrc, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -53,10 +66,10 @@ export default function BotViewPanel({ src, visible = true }: Props) {
           </div>
         )}
         <iframe
-          ref={frameRef}
           className="bot-view-panel__frame"
           style={{ opacity: isReady ? 1 : 0 }}
-          src={src}
+          src={frameSrc}
+          onLoad={handleFrameLoad}
           title="Bot viewer"
           loading="lazy"
           allow="fullscreen"

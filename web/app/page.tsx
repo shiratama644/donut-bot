@@ -101,6 +101,7 @@ export default function HomePage() {
           <BotViewPanel
             src={ws.viewerMode === "three" ? THREE_VIEWER_URL : VIEWER_URL}
             visible={ws.viewerMode !== "disabled"}
+            requireReadySignal={ws.viewerMode === "three"}
           />
         </section>
       </main>

@@ -38,7 +38,10 @@ if (!canvas || !statusEl || !posEl) {
   throw new Error("Failed to initialize DOM");
 }
 
-window.parent?.postMessage({ type: "viewer-ready" }, "*");
+const parentOrigin = new URLSearchParams(window.location.search).get("parentOrigin");
+if (parentOrigin) {
+  window.parent?.postMessage({ type: "viewer-ready" }, parentOrigin);
+}
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
