@@ -4,6 +4,7 @@ import {
   BOT_VIEWER_PORT,
   BOT_VIEWER_PREFIX,
   BOT_VIEWER_VIEW_DISTANCE,
+  BOT_VIEWER_ENABLED,
 } from "./config.js";
 
 type ViewerBot = Bot & {
@@ -16,7 +17,16 @@ let activeBot: ViewerBot | null = null;
 let viewerStarted = false;
 let startingPromise: Promise<void> | null = null;
 
+function isCanvasModuleMissingError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  if (!("code" in err) || err.code !== "MODULE_NOT_FOUND") return false;
+  if (!("message" in err) || typeof err.message !== "string") return false;
+  return err.message.includes("Cannot find module 'canvas'");
+}
+
 export async function startBotViewer(bot: Bot): Promise<void> {
+  if (!BOT_VIEWER_ENABLED) return;
+
   const viewerBot = bot as ViewerBot;
   if (activeBot === viewerBot && viewerStarted) {
     return;
@@ -55,6 +65,12 @@ export async function startBotViewer(bot: Bot): Promise<void> {
         `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
       );
     } catch (err) {
+      if (isCanvasModuleMissingError(err)) {
+        log.warn(
+          "Bot Viewer skipped because optional dependency 'canvas' is unavailable (fallback). Set BOT_VIEWER_ENABLED=false to disable viewer startup and suppress this warning. / Bot Viewer は 'canvas' 依存が未導入のため起動をスキップしました（フォールバック）。警告を避けるには BOT_VIEWER_ENABLED=false を設定してください。",
+        );
+        return;
+      }
       log.error("Bot Viewer の起動に失敗しました", err);
     } finally {
       startingPromise = null;

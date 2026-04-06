@@ -25,6 +25,7 @@ export const WEB_PORT = Number(process.env.WEB_PORT ?? 3000);
 export const BOT_VIEWER_PORT = Number(process.env.BOT_VIEWER_PORT ?? 3002);
 export const BOT_VIEWER_PREFIX = process.env.BOT_VIEWER_PREFIX ?? "/viewer";
 export const BOT_VIEWER_VIEW_DISTANCE = Number(process.env.BOT_VIEWER_VIEW_DISTANCE ?? 6);
+export const BOT_VIEWER_ENABLED = process.env.BOT_VIEWER_ENABLED !== "false";
 
 /** 移動イベントのブロードキャスト最小間隔 (ms) */
 export const MOVE_THROTTLE_MS = 150;
