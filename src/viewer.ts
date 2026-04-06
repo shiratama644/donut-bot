@@ -58,7 +58,9 @@ export async function startBotViewer(bot: Bot): Promise<void> {
         `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
       );
     } catch (err) {
-      if (err instanceof Error && err.message.includes("Cannot find module 'canvas'")) {
+      const moduleNotFound = err && typeof err === "object" && "code" in err && err.code === "MODULE_NOT_FOUND";
+      const canvasMissing = err instanceof Error && err.message.includes("'canvas'");
+      if (moduleNotFound && canvasMissing) {
         log.warn(
           "Bot Viewer は 'canvas' 依存が未導入のため起動をスキップしました（フォールバック）。この警告を避けるには BOT_VIEWER_ENABLED=false を設定してください。",
         );
