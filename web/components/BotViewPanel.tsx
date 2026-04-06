@@ -19,7 +19,7 @@ export default function BotViewPanel({ src }: Props) {
           loading="eager"
           allow="fullscreen"
           referrerPolicy="no-referrer"
-          sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+          sandbox="allow-scripts allow-pointer-lock"
         />
       </div>
     </section>

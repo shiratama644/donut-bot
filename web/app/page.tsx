@@ -20,7 +20,7 @@ const WS_URL =
 const VIEWER_URL =
   process.env.NEXT_PUBLIC_BOT_VIEWER_URL ??
   (typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:3002/viewer/`
+    ? `http://${window.location.hostname}:3002/viewer/`
     : "http://localhost:3002/viewer/");
 
 const DEFAULT_INTERVAL_MS = 2000;
