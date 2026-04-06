@@ -20,11 +20,8 @@ let startingPromise: Promise<void> | null = null;
 function isCanvasModuleMissingError(err: unknown): boolean {
   if (!err || typeof err !== "object") return false;
   if (!("code" in err) || err.code !== "MODULE_NOT_FOUND") return false;
-  if (!("requireStack" in err) || !Array.isArray(err.requireStack)) return false;
-  return err.requireStack.some(
-    (entry): entry is string =>
-      typeof entry === "string" && entry.endsWith("/prismarine-viewer/viewer/lib/entities.js"),
-  );
+  if (!("message" in err) || typeof err.message !== "string") return false;
+  return err.message.includes("Cannot find module 'canvas'");
 }
 
 export async function startBotViewer(bot: Bot): Promise<void> {
