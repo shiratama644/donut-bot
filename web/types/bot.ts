@@ -77,6 +77,11 @@ export interface MsaCodeClearedMessage {
   type: "msaCodeCleared";
 }
 
+export interface ViewerModeMessage {
+  type: "viewerMode";
+  mode: "disabled" | "prismarine" | "three";
+}
+
 export type AuthStateKind =
   | "DISCONNECTED"
   | "AUTHENTICATING"
@@ -102,7 +107,7 @@ export interface AuthStateMessage {
   version: 2;
 }
 
-export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | AuthStateMessage;
+export type BotMessage = PosMessage | ChatMessage | ActionbarMessage | LogMessage | SentMessage | BotStatusMessage | BotConnectionMessage | KickedMessage | CredentialsInfoMessage | AccountsListMessage | MsaCodeMessage | MsaCodeClearedMessage | ViewerModeMessage | AuthStateMessage;
 
 export interface Position {
   x: number;

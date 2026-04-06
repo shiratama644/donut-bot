@@ -9,6 +9,7 @@ import { setStatusIntervalMs } from "./status.js";
 import { saveCredentials, getCredentials, clearCredentials } from "./credentials.js";
 import { getAccountEntries, getAccountCredentials, removeAccount, clearAccountProfileCache } from "./accounts.js";
 import { getAuthState, resetAuthState, transitionAuthState } from "./authState.js";
+import { getViewerMode } from "./viewerState.js";
 
 // ─── モジュールレベルの状態 ───────────────────────────────
 let botRef: Bot | null = null;
@@ -301,6 +302,7 @@ export function initWebSocketServer(): void {
       auth: getAuthState(),
       version: 2,
     }));
+    ws.send(JSON.stringify({ type: "viewerMode", mode: getViewerMode() }));
 
     // 接続時に現在の座標を送る
     const pos = botRef?.entity?.position;
