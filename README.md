@@ -43,7 +43,11 @@ cp .env.example .env
 | `AUTH` | ✅ | 認証方式: `microsoft` または `offline` |
 | `VERSION` | | Minecraft のバージョン（例: `1.21.1`）。サーバーに合わせて設定 |
 | `WEB_PORT` | | Bot WebSocket サーバーのポート番号（デフォルト: `3000`） |
+| `BOT_VIEWER_PORT` | | Bot 視点 Viewer サーバーのポート番号（デフォルト: `3002`） |
+| `BOT_VIEWER_PREFIX` | | Bot 視点 Viewer の URL プレフィックス（デフォルト: `/viewer`） |
+| `BOT_VIEWER_VIEW_DISTANCE` | | Bot 視点 Viewer の描画距離（デフォルト: `6`） |
 | `NEXT_PUBLIC_WS_URL` | | Web UI から接続する WebSocket の URL（例: `ws://localhost:3000`）。本番環境では必ず設定 |
+| `NEXT_PUBLIC_BOT_VIEWER_URL` | | Web UI に埋め込む Bot 視点 Viewer の URL（例: `http://localhost:3002/viewer/`）。未設定時は `window.location.protocol` を使って自動解決 |
 
 ---
 

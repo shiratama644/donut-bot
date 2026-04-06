@@ -19,6 +19,7 @@ import { startStatusBroadcast } from "./status.js";
 import { getCredentials } from "./credentials.js";
 import { getAccountEntry, updateAccountMcid, clearAccountProfileCache, getAccountEntries } from "./accounts.js";
 import { getAuthState, transitionAuthState } from "./authState.js";
+import { startBotViewer, notifyBotViewerBotEnded } from "./viewer.js";
 
 /** 認証セッション追跡用の暗号学的に安全な UUID v4 を生成する。 */
 function createSessionId(): string {
@@ -121,6 +122,7 @@ export function createBot(): Bot {
     setBotConnected(true);
     coordTimer = startCoordDisplay(bot);
     stopStatus = startStatusBroadcast(bot);
+    void startBotViewer(bot);
   });
 
   // 移動のたびに座標をブロードキャスト（スロットリングで過剰送信を防止）
@@ -166,6 +168,7 @@ export function createBot(): Bot {
     markAuthDisconnected(reason, getCredentials()?.username ?? null);
     // デバイスコード表示をクリアする（ログイン前に切断された場合もクリア）
     broadcast({ type: "msaCodeCleared" });
+    notifyBotViewerBotEnded(bot);
   });
 
   return bot;
