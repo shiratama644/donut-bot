@@ -13,11 +13,11 @@ type ViewerBot = Bot & {
 };
 
 let activeViewerBot: ViewerBot | null = null;
-const startedViewerBots = new WeakSet<Bot>();
+const startedViewerBots = new Set<ViewerBot>();
 
 export async function startBotViewer(bot: Bot): Promise<void> {
   const viewerBot = bot as ViewerBot;
-  if (startedViewerBots.has(bot)) {
+  if (startedViewerBots.has(viewerBot)) {
     return;
   }
   if (activeViewerBot?.viewer?.close && activeViewerBot !== viewerBot) {
@@ -37,7 +37,7 @@ export async function startBotViewer(bot: Bot): Promise<void> {
       prefix: BOT_VIEWER_PREFIX,
       viewDistance: BOT_VIEWER_VIEW_DISTANCE,
     });
-    startedViewerBots.add(bot);
+    startedViewerBots.add(viewerBot);
     log.info(
       `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
     );
@@ -55,7 +55,7 @@ export function stopBotViewer(bot: Bot): void {
       log.error("Bot Viewer の停止に失敗しました", err);
     }
   }
-  startedViewerBots.delete(bot);
+  startedViewerBots.delete(viewerBot);
   if (activeViewerBot === viewerBot) {
     activeViewerBot = null;
   }
