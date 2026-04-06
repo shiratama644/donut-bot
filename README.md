@@ -49,6 +49,7 @@ cp .env.example .env
 | `BOT_VIEWER_ENABLED` | | Bot 視点 Viewer を有効化するか（デフォルト: `true`）。Termux など `canvas` が使えない環境では `false` 推奨 |
 | `NEXT_PUBLIC_WS_URL` | | Web UI から接続する WebSocket の URL（例: `ws://localhost:3000`）。本番環境では必ず設定 |
 | `NEXT_PUBLIC_BOT_VIEWER_URL` | | Web UI に埋め込む Bot 視点 Viewer の URL（例: `http://localhost:3002/viewer/`）。未設定時は `window.location.protocol` を使って自動解決 |
+| `VITE_WS_URL` | | `viewer-via-three` から接続する WebSocket URL。未設定時は `ws(s)://<hostname>:3000` を使用 |
 
 ---
 
@@ -101,6 +102,12 @@ pnpm dev
 pnpm web:dev
 ```
 
+### Three.js Viewer のみ起動（`viewer-via-three`）
+
+```bash
+pnpm viewer-three:dev
+```
+
 ### 本番ビルド & 起動
 
 ```bash
@@ -115,6 +122,9 @@ pnpm start
 
 # フロントエンドを起動
 pnpm web:start
+
+# Three.js Viewer をプレビュー
+pnpm viewer-three:preview
 ```
 
 ---
@@ -148,6 +158,11 @@ donut-bot/
 │   │   └── sanitize.ts       # テキストサニタイズ（ANSI / Minecraft カラーコード）
 │   └── types/
 │       └── bot.ts            # WebSocket メッセージの型定義
+├── viewer-via-three/         # Three.js ベースの Viewer（Vite + TypeScript）
+│   ├── src/
+│   │   ├── main.ts           # WS受信 + Three.js 初期化
+│   │   └── style.css         # Viewer UI スタイル
+│   └── package.json          # Viewer スクリプト・依存関係
 ├── docs/
 │   └── issues.md             # 既知の問題一覧
 ├── .env.example              # 環境変数テンプレート

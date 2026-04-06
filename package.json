@@ -11,7 +11,10 @@
     "dev:all": "concurrently --names \"web,bot\" --prefix-colors \"cyan,yellow\" \"pnpm --filter donutsmp-bot-web dev\" \"pnpm dev\"",
     "web:dev": "pnpm --filter donutsmp-bot-web dev",
     "web:build": "pnpm --filter donutsmp-bot-web build",
-    "web:start": "pnpm --filter donutsmp-bot-web start"
+    "web:start": "pnpm --filter donutsmp-bot-web start",
+    "viewer-three:dev": "pnpm --filter viewer-via-three dev",
+    "viewer-three:build": "pnpm --filter viewer-via-three build",
+    "viewer-three:preview": "pnpm --filter viewer-via-three preview"
   },
   "dependencies": {
     "dotenv": "^17.4.0",
