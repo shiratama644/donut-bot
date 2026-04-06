@@ -8,23 +8,25 @@ interface Props {
   intervalMs: number;
   onIntervalChange: (ms: number) => void;
   currentUsername: string | null;
-  onSetCredentials: (username: string) => void;
+  onSetCredentials: (username: string, password?: string) => void;
 }
 
 export default function SettingsPanel({ open, onClose, intervalMs, onIntervalChange, currentUsername, onSetCredentials }: Props) {
   const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   // パネルを開くたびに現在のユーザー名をプリフィル
   useEffect(() => {
     if (open) {
       setNewUsername(currentUsername ?? "");
+      setNewPassword("");
     }
   }, [open, currentUsername]);
 
   function handleSaveCredentials(e: React.FormEvent) {
     e.preventDefault();
     if (!newUsername.trim()) return;
-    onSetCredentials(newUsername.trim());
+    onSetCredentials(newUsername.trim(), newPassword.trim() || undefined);
     onClose();
   }
 
@@ -95,8 +97,22 @@ export default function SettingsPanel({ open, onClose, intervalMs, onIntervalCha
                 autoComplete="username"
               />
               <p className="settings-panel__creds-hint">
-                新しいアカウントの場合、再接続後にデバイスコードがこのページに表示されます
+                パスワード未入力の新規アカウントでは、再接続後にデバイスコードが表示されます
               </p>
+            </div>
+            <div className="settings-panel__creds-field">
+              <label className="settings-panel__creds-label" htmlFor="settings-password">
+                パスワード（任意）
+              </label>
+              <input
+                id="settings-password"
+                type="password"
+                className="settings-panel__creds-input"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="current-password"
+              />
             </div>
             <button
               type="submit"

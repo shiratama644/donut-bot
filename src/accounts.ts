@@ -4,6 +4,8 @@ import type { Credentials } from "./credentials.js";
 
 export interface AccountEntry {
   username: string;
+  /** 任意: Microsoft パスワード認証を使う場合のパスワード */
+  password?: string;
   /** ログイン後に記録される Minecraft ユーザー名 (MCID) */
   mcid?: string;
 }
@@ -44,11 +46,19 @@ export function saveAccounts(accounts: AccountEntry[]): void {
 export function addOrUpdateAccount(creds: Credentials): void {
   const accounts = loadAccounts();
   const idx = accounts.findIndex((a) => a.username === creds.username);
+  const nextPassword =
+    typeof creds.password === "string" && creds.password.trim()
+      ? creds.password
+      : undefined;
   if (idx >= 0) {
-    // 既存エントリはそのまま維持（破壊的更新をしない）
-    accounts[idx] = { username: accounts[idx].username, mcid: accounts[idx].mcid };
+    // 既存エントリは必要な項目のみ更新（mcid は維持）
+    accounts[idx] = {
+      username: accounts[idx].username,
+      mcid: accounts[idx].mcid,
+      password: nextPassword ?? accounts[idx].password,
+    };
   } else {
-    accounts.push({ username: creds.username });
+    accounts.push({ username: creds.username, ...(nextPassword ? { password: nextPassword } : {}) });
   }
   saveAccounts(accounts);
 }
@@ -92,7 +102,11 @@ export function getAccountEntry(username: string): AccountEntry | null {
 /** 保存済みアカウントの認証情報を返す */
 export function getAccountCredentials(username: string): Credentials | null {
   const entry = loadAccounts().find((a) => a.username === username);
-  return entry ? { username: entry.username } : null;
+  if (!entry) return null;
+  return {
+    username: entry.username,
+    ...(typeof entry.password === "string" && entry.password.trim() ? { password: entry.password } : {}),
+  };
 }
 
 /** ログイン後に MCID を記録する */

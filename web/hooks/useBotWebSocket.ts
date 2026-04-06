@@ -10,7 +10,7 @@ export interface BotWebSocketActions {
   sendSetInterval: (ms: number) => void;
   sendDisconnect: () => void;
   sendReconnect: () => void;
-  sendSetCredentials: (username: string) => void;
+  sendSetCredentials: (username: string, password?: string) => void;
   sendLogout: () => void;
   sendSwitchAccount: (username: string) => void;
   sendRemoveAccount: (username: string) => void;
@@ -184,8 +184,12 @@ export function useBotWebSocket(url: string): BotWebSocketState {
     send({ type: "reconnect" });
   }, [send]);
 
-  const sendSetCredentials = useCallback((username: string) => {
-    send({ type: "setCredentials", username });
+  const sendSetCredentials = useCallback((username: string, password?: string) => {
+    send({
+      type: "setCredentials",
+      username,
+      ...(typeof password === "string" && password.trim() ? { password } : {}),
+    });
   }, [send]);
 
   const sendLogout = useCallback(() => {

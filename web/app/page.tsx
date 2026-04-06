@@ -55,7 +55,7 @@ export default function HomePage() {
   if (ws.hasCredentials === false) {
     return (
       <LoginPanel
-        onSubmit={(username) => ws.actions.sendSetCredentials(username)}
+        onSubmit={(username, password) => ws.actions.sendSetCredentials(username, password)}
         msaCode={ws.msaCode}
       />
     );
@@ -95,7 +95,7 @@ export default function HomePage() {
         intervalMs={intervalMs}
         onIntervalChange={handleIntervalChange}
         currentUsername={ws.currentUsername}
-        onSetCredentials={(username) => ws.actions.sendSetCredentials(username)}
+        onSetCredentials={(username, password) => ws.actions.sendSetCredentials(username, password)}
       />
       {ws.authState?.state === "REAUTH_REQUIRED" && ws.authState.expectedMcid && ws.authState.actualMcid && (
         <div className="notice-banner notice-banner--warn" role="alert">
