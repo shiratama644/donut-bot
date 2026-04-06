@@ -108,6 +108,7 @@ body {
 
 .app-main-split__top,
 .app-main-split__bottom {
+  display: flex;
   min-height: 0;
 }
 
@@ -501,6 +502,7 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  width: 100%;
   min-height: 0;
 }
 
@@ -668,6 +670,7 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
   word-break: break-word;
+  overflow-wrap: anywhere;
   line-height: 1.6;
 }
 
@@ -683,6 +686,7 @@ body {
 .msg-header {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -706,6 +710,7 @@ body {
   font-size: 14px;
   color: var(--text-primary);
   word-break: break-word;
+  overflow-wrap: anywhere;
   line-height: 1.5;
 }
 
