@@ -85,11 +85,13 @@ To sign in, use a web browser to open the page https://microsoft.com/devicelogin
 
 ## 起動方法
 
-### 開発環境（Bot + Web UI を同時起動）
+### 開発環境（Bot + Web UI + Three.js Viewer を同時起動）
 
 ```bash
 pnpm dev:all
 ```
+
+> `viewer-via-three` を使う場合は `dev:all` で自動起動されます（`http://localhost:5173`）。
 
 ### Bot のみ起動
 
