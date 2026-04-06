@@ -16,10 +16,10 @@ export default function BotViewPanel({ src }: Props) {
           className="bot-view-panel__frame"
           src={src}
           title="Bot viewer"
-          loading="eager"
+          loading="lazy"
           allow="fullscreen"
           referrerPolicy="no-referrer"
-          sandbox="allow-scripts allow-pointer-lock"
+          sandbox="allow-scripts allow-same-origin allow-pointer-lock"
         />
       </div>
     </section>

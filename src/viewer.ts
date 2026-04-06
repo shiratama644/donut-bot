@@ -12,51 +12,60 @@ type ViewerBot = Bot & {
   };
 };
 
-let activeViewerBot: ViewerBot | null = null;
-const startedViewerBots = new Set<ViewerBot>();
+let activeBot: ViewerBot | null = null;
+let viewerStarted = false;
+let startingPromise: Promise<void> | null = null;
 
 export async function startBotViewer(bot: Bot): Promise<void> {
   const viewerBot = bot as ViewerBot;
-  if (startedViewerBots.has(viewerBot)) {
+  if (activeBot === viewerBot && viewerStarted) {
     return;
   }
-  if (activeViewerBot?.viewer?.close && activeViewerBot !== viewerBot) {
-    try {
-      activeViewerBot.viewer.close();
-    } catch (err) {
-      log.error("既存 Viewer の停止に失敗しました", err);
+
+  if (startingPromise) {
+    await startingPromise;
+    if (activeBot === viewerBot && viewerStarted) {
+      return;
     }
   }
-  activeViewerBot = viewerBot;
 
-  try {
-    const prismarineViewer = await import("prismarine-viewer");
-    prismarineViewer.mineflayer(viewerBot, {
-      firstPerson: true,
-      port: BOT_VIEWER_PORT,
-      prefix: BOT_VIEWER_PREFIX,
-      viewDistance: BOT_VIEWER_VIEW_DISTANCE,
-    });
-    startedViewerBots.add(viewerBot);
-    log.info(
-      `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
-    );
-  } catch (err) {
-    log.error("Bot Viewer の起動に失敗しました", err);
+  if (viewerStarted && activeBot && activeBot !== viewerBot) {
+    if (activeBot.viewer?.close) {
+      try {
+        activeBot.viewer.close();
+      } catch (err) {
+        log.error("既存 Viewer の停止に失敗しました", err);
+      }
+    }
+    viewerStarted = false;
   }
+
+  startingPromise = (async () => {
+    try {
+      const prismarineViewer = await import("prismarine-viewer");
+      prismarineViewer.mineflayer(viewerBot, {
+        firstPerson: true,
+        port: BOT_VIEWER_PORT,
+        prefix: BOT_VIEWER_PREFIX,
+        viewDistance: BOT_VIEWER_VIEW_DISTANCE,
+      });
+      activeBot = viewerBot;
+      viewerStarted = true;
+      log.info(
+        `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
+      );
+    } catch (err) {
+      log.error("Bot Viewer の起動に失敗しました", err);
+    } finally {
+      startingPromise = null;
+    }
+  })();
+
+  await startingPromise;
 }
 
-export function stopBotViewer(bot: Bot): void {
-  const viewerBot = bot as ViewerBot;
-  if (viewerBot.viewer?.close) {
-    try {
-      viewerBot.viewer.close();
-    } catch (err) {
-      log.error("Bot Viewer の停止に失敗しました", err);
-    }
-  }
-  startedViewerBots.delete(viewerBot);
-  if (activeViewerBot === viewerBot) {
-    activeViewerBot = null;
+export function notifyBotViewerBotEnded(bot: Bot): void {
+  if (activeBot === (bot as ViewerBot) && viewerStarted) {
+    log.info("Bot 切断を検知しました。Viewer サービスは維持し、次回接続時に Bot を切り替えます。");
   }
 }
