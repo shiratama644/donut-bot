@@ -5,6 +5,17 @@ type WsIncomingMessage =
   | { type: "pos"; x: number; y: number; z: number }
   | { type: string; [key: string]: unknown };
 
+function isPosMessage(value: unknown): value is { type: "pos"; x: number; y: number; z: number } {
+  if (typeof value !== "object" || value === null) return false;
+  const msg = value as Record<string, unknown>;
+  return (
+    msg.type === "pos" &&
+    typeof msg.x === "number" &&
+    typeof msg.y === "number" &&
+    typeof msg.z === "number"
+  );
+}
+
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
   throw new Error("Missing #app element");
@@ -99,7 +110,7 @@ ws.addEventListener("error", () => {
 ws.addEventListener("message", (event) => {
   try {
     const msg = JSON.parse(String(event.data)) as WsIncomingMessage;
-    if (msg.type !== "pos") return;
+    if (!isPosMessage(msg)) return;
     const { x, y, z } = msg;
     marker.position.set(x, y, z);
     posEl.textContent = `pos: ${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`;
