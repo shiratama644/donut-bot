@@ -10,12 +10,17 @@ interface Props {
 
 export default function BotViewPanel({ src, visible = true, requireReadySignal = false }: Props) {
   const [isReady, setIsReady] = useState(false);
+  const [frameSrc, setFrameSrc] = useState(src);
 
-  const frameSrc = useMemo(() => {
+  useEffect(() => {
+    if (!requireReadySignal) {
+      setFrameSrc(src);
+      return;
+    }
+    if (typeof window === "undefined") return;
     const url = new URL(src, window.location.href);
-    if (!requireReadySignal) return url.toString();
     url.searchParams.set("parentOrigin", window.location.origin);
-    return url.toString();
+    setFrameSrc(url.toString());
   }, [requireReadySignal, src]);
 
   const frameOrigin = useMemo(() => {
