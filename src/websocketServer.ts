@@ -299,6 +299,7 @@ export function initWebSocketServer(): void {
     ws.send(JSON.stringify({
       type: "authState",
       auth: getAuthState(),
+      version: 2,
     }));
 
     // 接続時に現在の座標を送る

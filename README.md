@@ -155,6 +155,9 @@ donut-bot/
 
 ## WebSocket プロトコル
 
+認証ライフサイクル（状態遷移・リトライ分類・副作用・バージョン方針）の正式仕様は
+[docs/auth-lifecycle.md](docs/auth-lifecycle.md) を参照してください。
+
 ### サーバー → クライアント（Bot からの通知）
 
 | `type` | ペイロード | 説明 |

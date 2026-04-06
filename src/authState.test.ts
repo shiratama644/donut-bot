@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "fs";
+import path from "path";
 
 import { getAllowedAuthTransitions, getAuthState, resetAuthState, transitionAuthState } from "./authState.js";
 
@@ -47,4 +49,18 @@ test("duplicate transition to same state remains idempotent-safe", () => {
   assert.equal(first.state, "AUTHENTICATING");
   assert.equal(second.state, "AUTHENTICATING");
   assert.ok(second.seq > first.seq);
+});
+
+test("all auth state writes are centralized in authState module", () => {
+  const srcDir = path.join(process.cwd(), "src");
+  const files = fs.readdirSync(srcDir).filter((f) => f.endsWith(".ts") && f !== "authState.ts");
+  for (const file of files) {
+    const full = path.join(srcDir, file);
+    const content = fs.readFileSync(full, "utf-8");
+    assert.equal(
+      /authState\.(state|username|sessionId|attempt|maxAttempts|nextRetryAt|reason|expectedMcid|actualMcid|retryStartedAt|retryDeadlineAt|retryInFlight|seq|protocolVersion)\s*=/.test(content),
+      false,
+      `direct authState mutation found in ${file}`,
+    );
+  }
 });
