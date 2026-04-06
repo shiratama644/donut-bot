@@ -17,6 +17,16 @@ let activeBot: ViewerBot | null = null;
 let viewerStarted = false;
 let startingPromise: Promise<void> | null = null;
 
+function isCanvasModuleMissingError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  if (!("code" in err) || err.code !== "MODULE_NOT_FOUND") return false;
+  if (!("requireStack" in err) || !Array.isArray(err.requireStack)) return false;
+  return err.requireStack.some(
+    (entry): entry is string =>
+      typeof entry === "string" && entry.endsWith("/prismarine-viewer/viewer/lib/entities.js"),
+  );
+}
+
 export async function startBotViewer(bot: Bot): Promise<void> {
   if (!BOT_VIEWER_ENABLED) return;
 
@@ -58,14 +68,9 @@ export async function startBotViewer(bot: Bot): Promise<void> {
         `Bot Viewer 起動: http://localhost:${BOT_VIEWER_PORT}${BOT_VIEWER_PREFIX}/`,
       );
     } catch (err) {
-      if (
-        err instanceof Error &&
-        "code" in err &&
-        err.code === "MODULE_NOT_FOUND" &&
-        err.message.includes("Cannot find module 'canvas'")
-      ) {
+      if (isCanvasModuleMissingError(err)) {
         log.warn(
-          "Bot Viewer は 'canvas' 依存が未導入のため起動をスキップしました（フォールバック）。この警告を避けるには BOT_VIEWER_ENABLED=false を設定してください。",
+          "Bot Viewer skipped because optional dependency 'canvas' is unavailable (fallback). Set BOT_VIEWER_ENABLED=false to disable viewer startup and suppress this warning. / Bot Viewer は 'canvas' 依存が未導入のため起動をスキップしました（フォールバック）。警告を避けるには BOT_VIEWER_ENABLED=false を設定してください。",
         );
         return;
       }
