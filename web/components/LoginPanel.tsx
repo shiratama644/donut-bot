@@ -4,19 +4,20 @@ import { useState } from "react";
 import MsaCodeDisplay from "@/components/MsaCodeDisplay";
 
 interface Props {
-  onSubmit: (username: string) => void;
+  onSubmit: (username: string, password?: string) => void;
   msaCode: { userCode: string; verificationUri: string } | null;
 }
 
 export default function LoginPanel({ onSubmit, msaCode }: Props) {
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || submitting) return;
     setSubmitting(true);
-    onSubmit(username.trim());
+    onSubmit(username.trim(), password.trim() || undefined);
   }
 
   return (
@@ -50,8 +51,23 @@ export default function LoginPanel({ onSubmit, msaCode }: Props) {
                 disabled={submitting}
               />
               <p className="login-card__hint">
-                入力後、このページにデバイスコードが表示されます
+                パスワード未入力の場合は、入力後にこのページへデバイスコードが表示されます
               </p>
+            </div>
+            <div className="login-card__field">
+              <label className="login-card__label" htmlFor="login-password">
+                パスワード（任意）
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                className="login-card__input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                disabled={submitting}
+              />
             </div>
             <button
               type="submit"

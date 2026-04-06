@@ -4,6 +4,7 @@ import { addOrUpdateAccount } from "./accounts.js";
 
 export interface Credentials {
   username: string;
+  password?: string;
 }
 
 const CREDS_PATH = path.join(process.cwd(), ".cache", "credentials.json");
@@ -16,14 +17,21 @@ let _credentials: Credentials | null = null;
  */
 export function loadCredentials(): Credentials | null {
   if (process.env.BOT_USERNAME) {
-    _credentials = { username: process.env.BOT_USERNAME };
+    const password = process.env.BOT_PASSWORD?.trim();
+    _credentials = {
+      username: process.env.BOT_USERNAME,
+      ...(password ? { password } : {}),
+    };
     return _credentials;
   }
   try {
     const raw = fs.readFileSync(CREDS_PATH, "utf-8");
-    const data = JSON.parse(raw) as Credentials;
+    const data = JSON.parse(raw) as Partial<Credentials>;
     if (typeof data.username === "string" && data.username.trim()) {
-      _credentials = { username: data.username };
+      _credentials = {
+        username: data.username,
+        ...(typeof data.password === "string" && data.password.trim() ? { password: data.password.trim() } : {}),
+      };
       return _credentials;
     }
   } catch {
@@ -60,4 +68,3 @@ export function clearCredentials(): void {
     console.warn("[credentials] 認証情報の削除に失敗しました:", err);
   }
 }
-

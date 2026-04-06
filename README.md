@@ -38,7 +38,7 @@ cp .env.example .env
 |--------|------|------|
 | `HOST` | ✅ | 接続先 Minecraft サーバーのホスト名（例: `donutsmp.net`） |
 | `PORT` | | Minecraft サーバーのポート番号（デフォルト: `25565`） |
-| `BOT_USERNAME` | ✅ | Bot の Microsoft アカウントのメールアドレス |
+| `BOT_USERNAME` | | Bot の Microsoft アカウントのメールアドレス（未設定時は Web UI で入力） |
 | `BOT_PASSWORD` | | Bot の Microsoft アカウントのパスワード（後述「認証方法」を参照） |
 | `AUTH` | ✅ | 認証方式: `microsoft` または `offline` |
 | `VERSION` | | Minecraft のバージョン（例: `1.21.1`）。サーバーに合わせて設定 |
@@ -51,7 +51,7 @@ cp .env.example .env
 
 ### パスワード認証（推奨・自動ログイン）
 
-`.env` に `BOT_PASSWORD` を設定すると、毎回コードを入力せず自動でログインできます。
+`.env` または Web UI で `BOT_PASSWORD` 相当のパスワードを設定すると、毎回コードを入力せず自動でログインできます。
 
 ```env
 BOT_USERNAME=your_email@example.com

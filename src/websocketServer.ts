@@ -368,9 +368,13 @@ function handleClientMessage(ws: WebSocket, msg: Record<string, unknown>): void 
 
   if (msg.type === "setCredentials") {
     const username = typeof msg.username === "string" ? msg.username.trim() : "";
+    const password = typeof msg.password === "string" ? msg.password.trim() : undefined;
     if (!username) return;
 
-    saveCredentials({ username });
+    saveCredentials({
+      username,
+      ...(password !== undefined ? { password } : {}),
+    });
     log.info(`認証情報を更新しました — ユーザー名: ${username}`);
 
     // 全クライアントに更新を通知

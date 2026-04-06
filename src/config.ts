@@ -12,6 +12,7 @@ export function getConfig() {
     port:           Number(process.env.PORT ?? 25565),
     username:       creds.username,
     auth:           (process.env.AUTH    ?? "microsoft") as "microsoft" | "offline",
+    ...(creds.password ? { password: creds.password } : {}),
     version:        process.env.VERSION  ?? "1.21.1",
     // パスワードを渡さないことでデバイスコードフロー（ブラウザ認証）を使用する
     // 認証トークンのキャッシュ先はアカウントごとに分けることで、
